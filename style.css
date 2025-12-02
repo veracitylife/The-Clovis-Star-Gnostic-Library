@@ -1,0 +1,30 @@
+/* Clovis Star Library theme */
+:root{ --bg:#f6f3ea; --paper:#fffdf6; --ink:#2b2b2b; --accent:#7b5d42; --border:#d4c7b2; }
+html,body{ margin:0; padding:0; background:var(--bg); color:var(--ink); font-family:"Cormorant Garamond", serif; }
+.topbar{ position:sticky; top:0; background:var(--paper); border-bottom:1px solid var(--border); padding:10px 16px; display:flex; align-items:center; justify-content:space-between; z-index:10; }
+.topbar .brand h1{ margin:0; font-family:"Great Vibes", cursive; font-size:28px; color:var(--accent); letter-spacing:1px; }
+.topbar .nav a{ margin-left:12px; font-size:13px; color:var(--ink); text-decoration:none; border-bottom:1px dotted var(--accent); }
+.topbar .nav a:hover{ color:var(--accent); }
+.content{ max-width:860px; margin:24px auto; background:var(--paper); border:1px solid var(--border); box-shadow:0 2px 4px rgba(0,0,0,0.06); padding:24px; }
+.layout{ display:grid; grid-template-columns:240px 1fr; gap:24px; }
+.sidebar{ font-size:14px; position:sticky; top:72px; max-height:calc(100vh - 120px); overflow-y:auto; padding-right:8px; }
+.sidebar h3{ margin:0 0 8px; font-size:16px; color:var(--accent); }
+.article{ min-width:0; }
+.doc .title{ font-weight:600; font-size:26px; margin-top:0; color:var(--accent); }
+.doc p{ line-height:1.7; font-size:18px; margin:0 0 14px; }
+.reading-table{ width:100%; border-collapse:collapse; }
+.reading-table td{ padding:8px 12px; }
+.chapters{ font-size:14px; margin:8px 0 16px; }
+.chapters a{ margin-right:8px; color:var(--accent); text-decoration:none; }
+.chapters a:hover{ text-decoration:underline; }
+.divider{ border-top:1px solid var(--border); margin:12px 0; }
+.crumbs{ font-size:14px; color:#666; margin-bottom:12px; }
+.crumbs a{ color:#666; text-decoration:none; border-bottom:1px dotted var(--accent); }
+.crumbs a:hover{ color:var(--accent); }
+.booknav{ display:flex; justify-content:space-between; font-size:14px; margin:16px 0; }
+.booknav a{ color:var(--accent); text-decoration:none; }
+.booknav a:hover{ text-decoration:underline; }
+.toc h2{ font-size:22px; color:var(--accent); }
+.list{ list-style:none; padding:0; }
+.list li{ margin:6px 0; }
+.ft{ text-align:center; font-size:12px; color:#666; padding:24px 0; }
