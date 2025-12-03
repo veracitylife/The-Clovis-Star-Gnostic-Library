@@ -4,30 +4,6 @@ A collection of ancient writings that have been hidden or censored
 
 
 
-Skip to content
-
-Chat history
-
-
-
-
-
-
-
-
-
-You said:
-
-about-plugin.html
-
-File
-
-index.html
-
-File
-
-For the homepage of our static/html version of the collection, write an introduction.
-
 The collection is of various important, historical, and yet sometimes controversial books and bibles.
 
 
@@ -564,117 +540,7 @@ See the attached files to help write this intro page
 
 
 
-Clovis Star said:
 
-<section class="intro"> <p> Welcome to the <strong>Clovis Star Library</strong> — a static, HTML-based gateway into a wide range of early Christian writings, gnostic texts, apocrypha, church fathers, historical witnesses, and related works, presented in a clean, readable format. :contentReference\[oaicite:0]{index=0} </p> <p> This collection has been gathered and organized by <strong>Ryan Thompson</strong>, who has brought together multiple public-domain and open collections of ancient and early Christian literature and curated them here for study and comparison. Many of these writings are central to Christian tradition; others are marginal, fragmentary, or controversial, and some—like later gnostic or esoteric compilations—stand at the edges of the wider biblical world. </p> <p> The texts here span the familiar New Testament books, apocrypha, gnostic gospels, apocalyptic writings, early church fathers, heresiologists, Roman historians, and later works such as the <em>Kolbrin Bible</em>. They are grouped into collections like <em>New Testament</em>, <em>Gnostic Writings</em>, <em>Apocalyptic Literature</em>, <em>Other Early Christian Writings</em>, and more, so you can browse by genre, tradition, or period as needed. :contentReference\[oaicite:1]{index=1} </p> <p> Behind this static library is the same corpus that powers the <strong>Gnostic Bible Super Search</strong> WordPress plugin by <strong>Spun Web Technology</strong>, a fork and extension of the open-source Bible SuperSearch project. The plugin adds tools for side-by-side comparison of texts, exploration of alternative canons, and access to a free API that lets you pull these texts into either the Gnostic Bible Super Search plugin or the original Bible SuperSearch client and API. :contentReference\[oaicite:2]{index=2} </p> <p> This site is offered as a research aid, not as an endorsement of any particular tradition or theology. You are encouraged to read carefully, compare sources, and follow the text notes and parallels where available. Whether you approach these writings as a historian, theologian, student, or simply a curious reader, the aim of the Clovis Star Library is to give you open access to the sources themselves, so you can trace the development of ideas, narratives, and communities across the first centuries of Christian and post-Christian literature. :contentReference\[oaicite:3]{index=3} </p> </section>
-
-You said:
-
-about-plugin.html
-
-File
-
-index.html
-
-File
-
-create a readme file for github based on the attached file and what is included above
-
-Clovis Star said:
-
-Here’s a draft README.md you can drop straight into your GitHub repo:
-
-
-
-\# Clovis Star Library \& Gnostic Bible Super Search
-
-
-
-The \*\*Clovis Star Library\*\* is a static HTML collection of early Christian writings, gnostic texts, apocrypha, church fathers, historical sources, and related literature. It is designed as a clean, readable reference library and as a data source for the \*\*Gnostic Bible Super Search\*\* WordPress plugin by \*\*Spun Web Technology\*\*. :contentReference\[oaicite:0]{index=0}
-
-
-
-This repository mirrors the HTML version of the library and can be served as a standalone website or used alongside the Bible SuperSearch ecosystem and its derivatives. :contentReference\[oaicite:1]{index=1}
-
-
-
----
-
-
-
-\## Project Origins
-
-
-
-This collection has been compiled by \*\*Ryan Thompson\*\*, who gathered multiple public-domain and open collections of important, historical, and sometimes controversial books and “bibles,” then organized them for open study and comparison. :contentReference\[oaicite:2]{index=2}
-
-
-
-Ryan owns \*\*Spun Web Technology\*\* and created a WordPress plugin fork of the original \*\*Bible SuperSearch\*\* plugin. His fork, \*\*Gnostic Bible Super Search\*\*, extends the base Bible SuperSearch client and API with:
-
-
-
-\- Additional texts (gnostic, apocryphal, historical, and related sources)
-
-\- Tools for side-by-side comparison of passages and editions
-
-\- Research-oriented features and alternate renderings
-
-\- A free API to import these texts into either the Gnostic Bible Super Search plugin or the original Bible SuperSearch plugin :contentReference\[oaicite:3]{index=3}
-
-
-
-The static site in this repo is the same library presented as a simple HTML site.
-
-
-
----
-
-
-
-\## Gnostic Bible Super Search Plugin
-
-
-
-The \*\*Gnostic Bible Super Search\*\* WordPress plugin integrates a capable Bible/ancient-texts client with a public API. It can also connect to a self-hosted API for complete autonomy. :contentReference\[oaicite:4]{index=4}
-
-
-
-\### Highlights
-
-
-
-\- Search and reference lookup across enabled Bible versions
-
-\- Standalone client or connected to public/self-hosted API
-
-\- Bible downloads and alternate renderings
-
-\- Extended collections of gnostic and historical writings :contentReference\[oaicite:5]{index=5}
-
-
-
-\### Plugin Download
-
-
-
-\- \*\*Gnostic Bible Super Search (WordPress plugin)\*\*  
-
-&nbsp; Download: https://spunwebtechnology.com/gnostic-bible-super-search
-
-
-
-\- \*\*Upstream Bible SuperSearch project\*\*  
-
-&nbsp; - API: https://github.com/aicwebtech/biblesupersearch\_api  
-
-&nbsp; - Client: https://github.com/aicwebtech/Bible-SuperSearch-Client-dev-enyo  
-
-&nbsp; - WordPress Plugin: https://wordpress.org/plugins/biblesupersearch/ :contentReference\[oaicite:6]{index=6}
-
-
-
----
 
 
 
@@ -810,13 +676,6 @@ The top navigation provides:
 
 This project is:
 
-
-
-\- \*\*Text-first\*\* – focused on giving direct access to primary sources.
-
-\- \*\*Research-oriented\*\* – enabling side-by-side comparison, variant tracking, and exploration of alternative canons and traditions.
-
-\- \*\*Neutral and non-confessional\*\* – offering these texts for study, not for endorsement of any particular tradition or theology. :contentReference\[oaicite:12]{index=12}
 
 
 
