@@ -1,713 +1,180 @@
-# The Clovis Star Gnostic Library
+# Clovis Star Static Rebuild
 
-A collection of ancient writings that have been hidden or censored
+Static, non-WordPress rebuild for Clovis Star with a cleaned book corpus, side-by-side comparison reader, member research tools, and a production-oriented Node/MySQL runtime.
 
+## Run Locally
 
+```powershell
+cd "C:\Users\disru\Documents\Codex\2026-06-16\i-have-a-wordpress-site-at\clovisstar-static"
+npm install
+npm run ingest
+npm run serve
+```
 
-The collection is of various important, historical, and yet sometimes controversial books and bibles.
+Open `http://127.0.0.1:4173`.
 
+`npm run serve` starts the account-backed Node server. Use that for registration, sign-in, admin tools, member preferences, and saved profile highlights.
 
+## Build Data
 
-Ryan Thompson has found multiple collections of ancient books, and have compiled them here, to share.
+```powershell
+npm run ingest
+```
 
+The importer reads from:
 
+`C:\Users\disru\Documents\wordpress plugins\HTML Projects\newJSON\all books combined`
 
-Ryan owns Spun Web Technology and has created a wordpress plugin fork of the Bible SuperSearch plugin.   This version that Ryan has created, has added some new features for research, such as offering all of these additional books, some related to the Bible, and some are said to have inspired the Bible, and offering a side-by-side comparison to compare changes, and edits, as well as various other types of research tools, as well as a free API to import all of these books into either the Gnostic Bible Super Search plugin by Spun Web Technology, or the original Bible SuperSearch plugin.
+It writes:
 
+- `data/books-index.json`
+- `data/books/*.json`
+- `data/cleanup-report.json`
+- `data/admin-settings.json`
+- `data/collections.json`
+- `data/review-queue.json`
+- `data/site-statistics.json`
 
+To inspect the full import without writing files:
 
-The page to download this plugin from is at:
+```powershell
+node scripts/ingest-books.js --audit
+```
 
-Download: https://spunwebtechnology.com/gnostic-bible-super-search
+Windows one-command import and run:
 
+```powershell
+powershell -ExecutionPolicy Bypass -File .\IMPORT_ALL_BOOKS_AND_RUN.ps1
+```
 
+## Runtime And Storage
 
-And for the Bible SuperSearch you can download that here:
+Production should use MySQL storage with server-managed cookie sessions.
 
+For production MySQL storage, create a local `.env` from `.env.example`, fill in the password privately, then run:
 
+```powershell
+npm install
+npm run db:init
+npm run verify
+npm run serve
+```
 
-https://github.com/aicwebtech/biblesupersearch\_api
+Do not commit `.env`.
 
+Verification:
 
+```powershell
+npm run audit:content:check
+npm run test
+npm run verify
+```
 
-https://github.com/aicwebtech/Bible-SuperSearch-Client-dev-enyo
+Linux host operations:
 
+```sh
+npm run prod:start
+npm run prod:status
+npm run prod:stop
+npm run prod:install-service
+npm run prod:install-schedules
+```
 
+Production maintenance:
 
-https://wordpress.org/plugins/biblesupersearch/
+```sh
+npm run db:maintain
+npm run db:optimize
+npm run logs:maintain
+npm run smoke:live
+```
 
+`prod:install-service` installs a user-level systemd service named `clovisstar-static.service`.
+`prod:install-schedules` installs cron jobs for daily database cleanup, weekly table optimization, log maintenance, and six-hour smoke tests.
 
+Session behavior:
 
+- sessions are server-managed with HttpOnly cookies
+- authenticated write routes require a CSRF header backed by the signed session
+- production mode requires `CLOVIS_STORAGE=mysql`
+- public sign-ups default to `member`; use `CLOVIS_ADMIN_EMAILS` or the promotion script for admin access
+- local JSON storage is for development only
 
+Or use the prompt-based starter, which does not save the database password to disk:
 
-These are the books contained in the collection so far:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\START_WITH_MYSQL.ps1
+```
 
+For local development only, leave `NODE_ENV` unset and `CLOVIS_STORAGE` unset. The runtime will use JSON files under `db/`.
 
+For isolated testing or alternate content roots, the server also accepts:
 
-Library
+- `CLOVISSTAR_DATA_DIR`
+- `CLOVISSTAR_DB_DIR`
 
-Welcome to the Clovis Star Library — a curated collection of early Christian writings, gnostic texts, and related works presented in a clean, readable format.
+## Migration And Auditing
 
+Move local JSON-backed account data into MySQL:
 
+```powershell
+npm run db:init
+npm run db:migrate-json
+```
 
-Collections
+Promote an existing account to admin:
 
-New Testament (17)
+```powershell
+npm run admin:promote -- user@example.com
+```
 
-Apocrypha (1)
+Run the content integrity audit:
 
-Gnostic Writings (25)
+```powershell
+npm run audit:content
+```
 
-Church Fathers (1)
+Verification mode without writing files:
 
-Historical Sources (2)
+```powershell
+npm run audit:content:check
+```
 
-Other Early Christian Writings (169)
+Development JSON files:
 
-Apocalyptic Literature (8)
+- `db/users.json`
+- `db/sessions.json`
+- `db/highlights.json`
+- `db/global-settings.json`
+- `db/member-preferences.json`
+- `db/book-overrides.json`
+- `db/review-queue.json`
+- `db/admin-audit-log.json`
 
-Apocryphal Acts (9)
+## Third-Party Catalog API
 
-All Books
+Admins can enable API access for a member from the admin user list. After access is enabled, the member can create or rotate one active token from `/members/`.
 
-The New Testament Books
+Partner requests use a bearer token:
 
-Apocrypha
+```txt
+Authorization: Bearer YOUR_TOKEN
+```
 
-Gnostics, Gnostic Gospels, \& Gnosticism
+Public API routes:
 
-Early Church Fathers
+- `GET /api/v1/catalog`
+- `GET /api/v1/collections`
+- `GET /api/v1/books/{slug}`
+- `GET /api/v1/openapi.json`
 
-Other Christian Text Sources
+The browser API supports CORS preflight for approved token-based integrations. Private books are never returned by the public API.
 
-The Passion Narrative
+## Notes
 
-The Lost Sayings Gospel Q
-
-1 Thessalonians
-
-Philippians
-
-Galatians
-
-1 Corinthians
-
-2 Corinthians
-
-Romans
-
-Philemon
-
-Colossians
-
-The Signs Gospel
-
-The Book of Hebrews
-
-Didache
-
-The Gospel of Thomas
-
-The Oxyrhynchus 1224 Gospel
-
-Apocalypse of Adam
-
-Eugnostos the Blessed
-
-Sophia of Jesus Christ
-
-Gospel of Mark
-
-Epistle of James
-
-Egerton Gospel
-
-Gospel of Peter
-
-Secret Mark
-
-Fayyum Fragment
-
-The Testaments of the Twelve Patriarchs
-
-Mara Bar-Serapion
-
-2 Thessalonians
-
-Ephesians
-
-Gospel of Matthew
-
-1 Peter
-
-Epistle of Barnabas
-
-Gospel of Luke
-
-Book of Acts of the Apostles
-
-First Clement
-
-Gospel of the Egyptians
-
-Gospel of the Hebrews
-
-Christian Sibyllines
-
-The Book of Revelation
-
-Gospel of John
-
-1 John
-
-2 John
-
-3 John
-
-Epistle of Jude
-
-Flavius Josephus
-
-1 Timothy
-
-2 Timothy
-
-Titus
-
-Apocalypse of Peter (Akhmim)
-
-The Secret Book of James
-
-The Preaching of Peter
-
-Gospel of the Ebionites
-
-Gospel of the Nazoreans
-
-The Shepherd of Hermas
-
-2 Peter
-
-Odes of Solomon
-
-The Gospel of Eve
-
-The Thunder, Perfect Mind
-
-Book of Elchasai
-
-Ignatius of Antioch
-
-St. Polycarp of Smyrna
-
-Fragments of Papias
-
-The Oxyrhynchus 840 Gospel
-
-The Traditions of Matthias
-
-Pliny the Younger
-
-Suetonius
-
-Cornelius Tacitus
-
-Quadratus of Athens
-
-Apology of Aristides
-
-Basilides
-
-The Naassene Fragment
-
-Valentinus
-
-Apocryphon of John
-
-Gospel of Mary
-
-Dialogue of the Savior
-
-Gospel of the Savior
-
-2nd Apocalypse of James
-
-Trimorphic Protennoia
-
-The Gospel of Perfection
-
-Genna Marias (Descent of Mary)
-
-Marcion
-
-Aristo of Pella
-
-Epiphanes On Righteousness
-
-The Ophite Diagrams
-
-2 Clement
-
-Gospel of Judas
-
-Epistle of Mathetes to Diognetus
-
-Epistula Apostolorum
-
-Fragments of Ptolemy
-
-Isidore
-
-Fronto
-
-Infancy Gospel of James
-
-Infancy Gospel of Thomas
-
-Gospel of Truth
-
-Martyrdom of Polycarp
-
-Justin Martyr
-
-Excerpts of Theodotus
-
-Fragments of Heracleon
-
-Ascension of Isaiah
-
-The Interpretation of Knowledge
-
-The Testimony of Truth
-
-Acts of Peter
-
-Acts of John
-
-Acts of Paul
-
-Acts of Andrew
-
-Acts of Peter and the Twelve Apostles
-
-The Book of Thomas the Contender
-
-The Paraphrase of Shem
-
-Fifth and Sixth Books of Esra
-
-Authoritative Teaching
-
-Coptic Apocalypse of Paul
-
-The Prayer of the Apostle Paul
-
-Discourse on the Eighth and Ninth
-
-Melchizedek
-
-Preaching of Paul (Praedicatio Pauli)
-
-Epistle to the Laodiceans
-
-Questions of Mary
-
-Allogenes, the Stranger
-
-Hypsiphrone
-
-Valentinian Exposition with Valentinian Liturgical Readings
-
-The Act of Peter
-
-The Concept of Our Great Power
-
-Acts of Pilate
-
-Anti-Marcionite Prologues
-
-Fragments of a Dialogue between John and Jesus
-
-Tatian's Address to the Greeks
-
-Claudius Apollinaris
-
-Apelles
-
-Julius Cassianus
-
-The Octavius of Minucius Felix
-
-Acts of Carpus, Papylus, and Agathonice
-
-Fragments of Melito of Sardis
-
-Fragments of Hegesippus
-
-Fragments of Dionysius of Corinth
-
-Lucian of Samosata
-
-Marcus Aurelius
-
-Diatessaron
-
-The Dura-Europos Gospel Harmony
-
-The Muratorian Canon
-
-Treatise on the Resurrection
-
-Letter of Peter to Philip
-
-The Thought of Norea
-
-Athenagoras of Athens
-
-Irenaeus of Lyons
-
-Fragments of Rhodon
-
-Fragments of Theophilus of Caesarea
-
-Galen
-
-Celsus
-
-Letter from Vienna and Lyons
-
-The Passion of the Scillitan Martyrs
-
-Theophilus of Antioch
-
-Acts of Apollonius
-
-Bardesanes
-
-Kerygmata Petrou
-
-Hippolytus of Rome
-
-The Sentences of Sextus
-
-1st Apocalypse of James
-
-Gospel of Philip
-
-Clement of Alexandria
-
-Fragments of Maximus of Jerusalem
-
-Fragments of Polycrates
-
-Talmud
-
-Victor I
-
-Fragments of Pantaenus
-
-The Second Treatise of the Great Seth
-
-Anonymous Anti-Montanist
-
-Inscription of Abercius
-
-Tertullian
-
-Fragments of Serapion of Antioch
-
-Apollonius
-
-Caius
-
-Life of Apollonius of Tyana by Philostratus
-
-Acts of Thomas
-
-Ammonius of Alexandria
-
-Zostrianos
-
-The Three Steles of Seth
-
-Exegesis on the Soul
-
-Didascalia
-
-Books of Jeu
-
-Pistis Sophia
-
-The Tripartite Tractate
-
-The Hypostasis of the Archons
-
-The Prayer of Thanksgiving
-
-Coptic Apocalypse of Peter
-
-Apostolic Church Order
-
-The Holy Book of the Great Invisible Spirit
-
-Monarchian Prologues
-
-Acts of Perpetua and Felicitas
-
-Origen
-
-Lucian of Antioch
-
-Callistus
-
-Dionysius of Alexandria
-
-Firmilian of Caesarea
-
-Commodian (or Commodianus)
-
-Cyprian
-
-The Living Gospel of Mani
-
-The Teachings of Silvanus
-
-Asclepius 21-29: Excerpt from the Perfect Discourse
-
-Coptic Apocalypse of Elijah
-
-Apocalypse of Paul (Visio Pauli)
-
-Pope Cornelius
-
-Novatian
-
-Pope Stephen
-
-Pope Dionysius
-
-Theognostus
-
-Gregory Thaumaturgus
-
-Pope Felix
-
-Victorinus of Pettau
-
-Methodius
-
-Marsanes
-
-On the Origin of the World
-
-De Recta in Deum Fide
-
-Hesychius
-
-Pierius
-
-Pamphilus of Caesarea
-
-Arnobius of Sicca
-
-Peter of Alexandria
-
-Pseudo-Clementine Homilies
-
-Eusebius of Caesarea
-
-Manichean Acts of Leucius Charinus
-
-Letters of Paul and Seneca
-
-Apocalypse of Thomas
-
-The Freer Logion
-
-Gospel of Gamaliel
-
-Lactantius
-
-Reticius of Autun
-
-Pseudo-Clementine Recognitions
-
-The Kolbrin Bible
-
-
-
-See the attached files to help write this intro page
-
-
-
-
-
-
-
-\## Library Overview
-
-
-
-The static \*\*Clovis Star Library\*\* site presents the text collection with a simple header, navigation, and content layout:
-
-
-
-\- `index.html` – main Library page with collections and full book list
-
-\- `about-plugin.html` – information about the Gnostic Bible Super Search plugin
-
-\- `style.css` – typography and layout styling
-
-\- `/categories/` – category index pages (New Testament, Gnostic Writings, etc.)
-
-\- `/books/` – individual HTML editions of each work :contentReference\[oaicite:7]{index=7}
-
-
-
-\### Collections
-
-
-
-The library is organized into several main groupings:
-
-
-
-\- \*\*New Testament\*\* (17)
-
-\- \*\*Apocrypha\*\* (1)
-
-\- \*\*Gnostic Writings\*\* (25)
-
-\- \*\*Church Fathers\*\* (1)
-
-\- \*\*Historical Sources\*\* (2)
-
-\- \*\*Other Early Christian Writings\*\* (169)
-
-\- \*\*Apocalyptic Literature\*\* (8)
-
-\- \*\*Apocryphal Acts\*\* (9) :contentReference\[oaicite:8]{index=8}
-
-
-
-Under “All Books” the site lists individual texts, including but not limited to:
-
-
-
-\- Canonical and quasi-canonical materials (e.g., \*\*The New Testament Books\*\*, \*\*Apocrypha\*\*, \*\*The Book of Hebrews\*\*, \*\*Revelation\*\*)
-
-\- Gnostic gospels and related writings (e.g., \*\*Gospel of Thomas\*\*, \*\*Gospel of Mary\*\*, \*\*Apocryphon of John\*\*, \*\*Pistis Sophia\*\*, \*\*The Holy Book of the Great Invisible Spirit\*\*)
-
-\- Early Church Fathers and apologists (e.g., \*\*Ignatius of Antioch\*\*, \*\*Justin Martyr\*\*, \*\*Irenaeus of Lyons\*\*, \*\*Tertullian\*\*, \*\*Origen\*\*, \*\*Eusebius of Caesarea\*\*)
-
-\- Roman and other historical witnesses (e.g., \*\*Flavius Josephus\*\*, \*\*Tacitus\*\*, \*\*Suetonius\*\*, \*\*Lucian of Samosata\*\*)
-
-\- Apocalyptic and visionary works (e.g., \*\*Apocalypse of Peter\*\*, \*\*Apocalypse of Paul\*\*, \*\*Coptic Apocalypse of Peter\*\*, \*\*Apocalypse of Thomas\*\*)
-
-\- Later and controversial compilations such as \*\*The Kolbrin Bible\*\* :contentReference\[oaicite:9]{index=9}
-
-
-
-For the full list of works, see the \*\*All Books\*\* section in `index.html`.
-
-
-
----
-
-
-
-\## How to Use This Repository
-
-
-
-\### View as a Static Site
-
-
-
-You can view the library locally or via any static hosting service:
-
-
-
-1\. Clone or download this repository.
-
-2\. Open `index.html` in your browser, or
-
-3\. Serve the directory with any static HTTP server (GitHub Pages, Netlify, nginx, etc.).
-
-
-
-The top navigation provides:
-
-
-
-\- \*\*Home\*\* – main library page
-
-\- \*\*Table of Contents\*\* – collection/series view
-
-\- \*\*Books\*\* – all works
-
-\- \*\*Gnostic Bible Super Search\*\* – plugin info page (`about-plugin.html`) :contentReference\[oaicite:10]{index=10}
-
-
-
-\### Use with the Plugin \& API
-
-
-
-\- Install the \*\*Gnostic Bible Super Search\*\* plugin in WordPress.
-
-\- Configure it to use:
-
-&nbsp; - The public API (free), or
-
-&nbsp; - Your own self-hosted Bible SuperSearch API instance.
-
-\- Optionally, use this static library as a front-end reference site pointing users to the richer search interface in WordPress. :contentReference\[oaicite:11]{index=11}
-
-
-
----
-
-
-
-\## Goals and Philosophy
-
-
-
-This project is:
-
-
-
-
-Readers are encouraged to compare sources, note differences between traditions, and use the accompanying plugins and API for deeper research workflows.
-
-
-
----
-
-
-
-\## Credits
-
-
-
-\- \*\*Compilation, static site, and plugin fork:\*\* Ryan Thompson / \[Spun Web Technology](https://spunwebtechnology.com/)
-
-\- \*\*Upstream project:\*\* \[Bible SuperSearch](https://github.com/aicwebtech/biblesupersearch\_api) and its client/WordPress integrations.
-
-
-
-If you make improvements to the static library or build new tools on top of the API, contributions and pull requests are welcome.
-
-
-
-
-
-
-
-No file chosenNo file chosen
-
-ChatGPT can make mistakes. Check important info.
-
-
+- Public/private book status comes from canonical `data/` plus backend overrides.
+- Member preferences are stored separately from global admin settings.
+- Admin writes are logged in the backend audit log.
+- Static hosting by itself cannot support sign-in, highlights, or admin persistence. Use the Node server runtime for production behavior.
+- Completion of genuinely incomplete books requires a verified source text. The importer flags incomplete/suspect records but does not fabricate missing sacred or historical text.
 

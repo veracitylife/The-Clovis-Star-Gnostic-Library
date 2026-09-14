@@ -1,0 +1,4 @@
+Clovis Star Sumerian creation video study page
+Version: 1.1.16
+Adds Sumerian Creation Story video guide page and safe link rendering for URLs/internal book links in reader paragraphs.
+

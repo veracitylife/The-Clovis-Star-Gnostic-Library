@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manuscripts - Clovis Star Library</title>
+  <meta name="description" content="Browse manuscript-oriented source material in the Clovis Star library.">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/thoth-live.css?v=20260913c">
+</head>
+<body>
+  <header class="gt-header"><div class="gt-container gt-header__inner"><a href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">GNOSTIC LIBRARY</div></a><nav class="gt-header__nav"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/library/">Library</a></li><li><a href="/members/">Members</a></li><li><a href="/about/">About</a></li></ul></nav></div></header>
+  <main class="gt-container gt-container--wide">
+    <h1 class="section-title">Manuscripts</h1>
+    <div id="items" class="book-grid"></div>
+  </main>
+  <script type="module">
+    import { loadBooks, escapeHtml } from "/assets/js/app.js";
+    const items = document.getElementById("items");
+    const books = (await loadBooks()).filter((book) => /manuscript|codex|papyrus|scroll|dead sea|nag hammadi/i.test(`${book.title} ${book.collection} ${book.excerpt || ""}`));
+    items.innerHTML = books.map((book) => `<a class="book-card" href="/books/?book=${encodeURIComponent(book.slug)}&collection=${encodeURIComponent(book.collection || "")}"><h2>${escapeHtml(book.title)}</h2><p>${escapeHtml(book.collection || "Library")}</p></a>`).join("") || "<p>No manuscript records are currently public.</p>";
+  </script>
+  <script src="/assets/js/thoth-live.js?v=20260914c" defer></script>
+</body>
+</html>
+

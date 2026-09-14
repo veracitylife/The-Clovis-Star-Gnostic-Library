@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compare Books - Clovis Star</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=mobilefix1">
+  <link rel="stylesheet" href="/assets/css/thoth-live.css?v=20260913c">
+</head>
+<body>
+  <header class="gt-header">
+    <div class="gt-container gt-header__inner">
+      <a class="gt-header__brand" href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">SIDE-BY-SIDE</div></a>
+      <nav class="gt-header__nav" aria-label="Primary"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/members/">Members</a></li><li><a href="/about/">About</a></li><li><a href="/#collections">Collections</a></li></ul></nav>
+    </div>
+  </header>
+  <main class="gt-container gt-container--wide">
+    <div class="toolbar">
+      <h1 class="section-title">Side-by-Side Comparison</h1>
+      <button class="gt-btn gt-btn--secondary" id="toggle-sidebar" type="button">Hide Saved Highlights</button>
+    </div>
+    <div class="toolbar">
+      <select id="highlight-color" aria-label="Highlight color">
+        <option value="yellow">Yellow</option><option value="green">Green</option><option value="blue">Blue</option><option value="pink">Pink</option><option value="gold">Gold</option>
+      </select>
+      <input id="highlight-note" type="text" placeholder="Optional note for this highlight" aria-label="Highlight note">
+      <button class="gt-btn gt-btn--secondary" id="save-highlight" hidden style="display:none" type="button">Save Selected Highlight</button>
+      <a class="gt-btn gt-btn--secondary" href="/members/">Members</a>
+    </div>
+
+    <div class="compare-shell">
+      <div class="compare-grid">
+        <section class="panel compare-pane">
+          <select id="left-book" aria-label="Left book"></select>
+          <h2 id="left-title" class="book-title"></h2>
+          <div id="left-content" class="reader-content"></div>
+        </section>
+        <section class="panel compare-pane">
+          <select id="right-book" aria-label="Right book"></select>
+          <h2 id="right-title" class="book-title"></h2>
+          <div id="right-content" class="reader-content"></div>
+        </section>
+      </div>
+
+      <aside class="panel highlight-sidebar" id="highlight-sidebar">
+        <div class="highlight-sidebar__header">
+          <h2 class="section-title">Saved Highlights</h2>
+        </div>
+        <section class="auth-card" id="auth-card">
+          <p class="muted" id="auth-status">Sign in or register to save highlights to your profile.</p>
+          <label>Email <input id="auth-email" type="text" autocomplete="email"></label>
+          <label>Password <input id="auth-password" type="password" autocomplete="current-password"></label>
+          <label>Display name <input id="auth-name" type="text" autocomplete="name"></label>
+          <div class="toolbar">
+            <button class="gt-btn gt-btn--primary" id="register" type="button">Register</button>
+            <button class="gt-btn gt-btn--secondary" id="login" type="button">Login</button>
+            <button class="gt-btn gt-btn--secondary" id="logout" hidden style="display:none" type="button">Logout</button>
+          </div>
+        </section>
+        <div class="toolbar">
+          <button class="gt-btn gt-btn--secondary" id="export-highlights" hidden style="display:none" type="button">Export</button>
+        </div>
+        <div id="highlight-list"></div>
+      </aside>
+    </div>
+  </main>
+  <script type="module">
+    import {
+      loadBooks,
+      loadBook,
+      renderBookOptions,
+      renderBookContent,
+      saveHighlight,
+      loadAccountHighlights,
+      deleteHighlight,
+      currentSelectionText,
+      escapeHtml,
+      highlightBookHref,
+      highlightBookLabel,
+      getAuth,
+      registerAccount,
+      loginAccount,
+      groupHighlightsByBook,
+      logoutAccount,
+      syncAuthFromServer,
+      loadSiteBootstrap,
+      installCopyAttribution
+    } from "/assets/js/app.js";
+
+    const bootstrap = await loadSiteBootstrap();
+    installCopyAttribution(bootstrap.siteSettings);
+    const books = (await loadBooks()).filter((book) => book.visibility !== "private");
+    const left = document.getElementById("left-book");
+    const right = document.getElementById("right-book");
+    const sidebar = document.getElementById("highlight-sidebar");
+    const toggle = document.getElementById("toggle-sidebar");
+
+    renderBookOptions(left, books, books[0]?.slug);
+    renderBookOptions(right, books, books[1]?.slug || books[0]?.slug);
+
+    async function loadSide(side) {
+      const select = document.getElementById(`${side}-book`);
+      const book = await loadBook(select.value);
+      document.getElementById(`${side}-title`).textContent = book.title;
+      renderBookContent(document.getElementById(`${side}-content`), book);
+    }
+
+    function activeBookForSelection() {
+      const selection = window.getSelection();
+      const node = selection?.anchorNode?.parentElement;
+      const pane = node?.closest(".compare-pane");
+      const side = pane?.querySelector("select")?.id === "right-book" ? "right" : "left";
+      const select = document.getElementById(`${side}-book`);
+      return books.find((book) => book.slug === select.value) || books[0];
+    }
+
+    function updateAuthStatus() {
+      const auth = getAuth();
+      const signedIn = Boolean(auth?.user);
+      document.getElementById("auth-status").textContent = signedIn
+        ? `Signed in as ${auth.user.displayName || auth.user.email}.`
+        : "Sign in or register to save highlights to your profile.";
+      document.getElementById("register").disabled = !bootstrap.siteSettings?.members?.allowRegistration;
+      const setVisible = (id, visible) => {
+        const element = document.getElementById(id);
+        element.hidden = !visible;
+        element.style.display = visible ? "" : "none";
+      };
+      setVisible("register", !signedIn);
+      setVisible("login", !signedIn);
+      setVisible("logout", signedIn);
+      setVisible("export-highlights", signedIn);
+      setVisible("save-highlight", signedIn);
+      for (const id of ["auth-email", "auth-password", "auth-name"]) setVisible(id, !signedIn);
+    }
+
+    async function renderHighlights() {
+      const items = await loadAccountHighlights();
+      const groups = groupHighlightsByBook(items);
+      document.getElementById("highlight-list").innerHTML = Object.entries(groups).map(([bookTitle, highlights]) => `
+        <section class="highlight-book-group">
+          <h3>${escapeHtml(bookTitle)}</h3>
+          ${highlights.map((item) => `
+            <article class="highlight-item">
+              <span class="status-pill">${escapeHtml(item.color)}</span>
+              <p><a href="${highlightBookHref(item)}">${escapeHtml(highlightBookLabel(item))}</a></p>
+              <p class="highlight-${escapeHtml(item.color)}">${escapeHtml(item.text)}</p>
+              ${item.note ? `<p>${escapeHtml(item.note)}</p>` : ""}
+              <p class="muted">${escapeHtml(item.createdAt || "")}</p>
+              <button class="gt-btn gt-btn--secondary" data-delete="${escapeHtml(item.id)}" type="button">Delete</button>
+            </article>
+          `).join("")}
+        </section>
+      `).join("") || "<p class='muted'>No saved highlights yet.</p>";
+    }
+
+    left.addEventListener("change", () => loadSide("left"));
+    right.addEventListener("change", () => loadSide("right"));
+    toggle.addEventListener("click", () => {
+      sidebar.classList.toggle("is-collapsed");
+      toggle.textContent = sidebar.classList.contains("is-collapsed") ? "Show Saved Highlights" : "Hide Saved Highlights";
+    });
+    document.getElementById("save-highlight").addEventListener("click", async () => {
+      const text = currentSelectionText();
+      if (!text) return alert("Select text in either pane first.");
+      const book = activeBookForSelection();
+      await saveHighlight({
+        bookSlug: book.slug,
+        bookTitle: book.title,
+        color: document.getElementById("highlight-color").value,
+        note: document.getElementById("highlight-note").value.trim(),
+        text
+      });
+      document.getElementById("highlight-note").value = "";
+      await renderHighlights();
+    });
+    document.getElementById("register").addEventListener("click", async () => {
+      try {
+        await registerAccount({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value, displayName: document.getElementById("auth-name").value });
+        updateAuthStatus(); await renderHighlights();
+      } catch (error) { alert(error.message); }
+    });
+    document.getElementById("login").addEventListener("click", async () => {
+      try {
+        await loginAccount({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value });
+        updateAuthStatus(); await renderHighlights();
+      } catch (error) { alert(error.message); }
+    });
+    document.getElementById("logout").addEventListener("click", async () => { await logoutAccount(); updateAuthStatus(); await renderHighlights(); });
+    document.getElementById("highlight-list").addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-delete]");
+      if (!button) return;
+      await deleteHighlight(button.dataset.delete);
+      await renderHighlights();
+    });
+    document.getElementById("export-highlights").addEventListener("click", async () => {
+      const blob = new Blob([JSON.stringify(await loadAccountHighlights(), null, 2)], { type: "application/json" });
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "clovisstar-highlights.json" });
+      a.click();
+    });
+
+    await syncAuthFromServer();
+    await loadSide("left");
+    await loadSide("right");
+    updateAuthStatus();
+    await renderHighlights();
+  </script>
+  <script src="/assets/js/thoth-live.js?v=20260914c" defer></script>
+</body>
+</html>
+

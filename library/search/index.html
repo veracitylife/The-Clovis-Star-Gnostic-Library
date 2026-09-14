@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Search - Clovis Star Library</title>
+  <meta name="description" content="Search the Clovis Star library catalog and document-library index foundation.">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/thoth-live.css?v=20260913c">
+</head>
+<body>
+  <header class="gt-header"><div class="gt-container gt-header__inner"><a href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">GNOSTIC LIBRARY</div></a><nav class="gt-header__nav"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/library/">Library</a></li><li><a href="/members/">Members</a></li><li><a href="/about/">About</a></li></ul></nav></div></header>
+  <main class="gt-container gt-container--wide">
+    <h1 class="section-title">Library Search</h1>
+    <form id="search-form" class="panel">
+      <label>Search <input id="query" type="search" autocomplete="off" placeholder="Search title, summary, source, topic"></label>
+      <div class="toolbar"><button class="gt-btn gt-btn--primary" type="submit">Search</button></div>
+    </form>
+    <div id="status" class="muted"></div>
+    <div id="items" class="book-grid"></div>
+  </main>
+  <script type="module">
+    import { loadBooks, escapeHtml } from "/assets/js/app.js";
+    const form = document.getElementById("search-form");
+    const query = document.getElementById("query");
+    const status = document.getElementById("status");
+    const items = document.getElementById("items");
+    const books = await loadBooks();
+    function render(term = "") {
+      const q = term.trim().toLowerCase();
+      const matches = q ? books.filter((book) => `${book.title} ${book.collection} ${book.excerpt || ""}`.toLowerCase().includes(q)) : books.slice(0, 24);
+      status.textContent = `${matches.length} matching records`;
+      items.innerHTML = matches.map((book) => `<a class="book-card" href="/books/?book=${encodeURIComponent(book.slug)}&collection=${encodeURIComponent(book.collection || "")}"><h2>${escapeHtml(book.title)}</h2><p>${escapeHtml(book.collection || "Library")}</p></a>`).join("");
+      fetch(`/api/library/search?q=${encodeURIComponent(term)}`, { credentials: "same-origin" }).catch(() => {});
+    }
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      render(query.value);
+    });
+    render("");
+  </script>
+  <script src="/assets/js/thoth-live.js?v=20260914c" defer></script>
+</body>
+</html>
+

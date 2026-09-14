@@ -1,0 +1,19 @@
+[Unit]
+Description=Clovis Star static rebuild Node runtime
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/clovisstar/apps/clovisstar-static-rebuild
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=4173
+ExecStart=/usr/bin/npm run serve
+Restart=always
+RestartSec=5
+StandardOutput=append:/home/clovisstar/apps/clovisstar-static-rebuild/logs/systemd.log
+StandardError=append:/home/clovisstar/apps/clovisstar-static-rebuild/logs/systemd-error.log
+
+[Install]
+WantedBy=default.target
+

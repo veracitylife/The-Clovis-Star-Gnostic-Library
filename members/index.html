@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Members - Clovis Star</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=member-layout-20260618">
+  <link rel="stylesheet" href="/assets/css/thoth-live.css?v=20260913c">
+</head>
+<body>
+  <header class="gt-header">
+    <div class="gt-container gt-header__inner">
+      <a class="gt-header__brand" href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">MEMBERS</div></a>
+      <nav class="gt-header__nav" aria-label="Primary"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/members/">Members</a></li><li><a href="/about/">About</a></li><li><a href="/#collections">Collections</a></li></ul></nav>
+    </div>
+  </header>
+  <main class="gt-container gt-container--wide member-shell">
+    <section class="panel member-auth">
+      <h1 class="section-title">Research</h1>
+      <p class="muted" id="site-version">Site version loading...</p>
+      <p class="muted" id="auth-status">Sign in or register to view saved highlights and notes.</p>
+      <label>Email <input id="auth-email" type="text" autocomplete="email"></label>
+      <label>Password <input id="auth-password" type="password" autocomplete="current-password"></label>
+      <label>Display name <input id="auth-name" type="text" autocomplete="name"></label>
+      <div class="toolbar">
+        <button class="gt-btn gt-btn--primary" id="register" type="button">Register</button>
+        <button class="gt-btn gt-btn--secondary" id="login" type="button">Login</button>
+        <button class="gt-btn gt-btn--secondary" id="logout" hidden style="display:none" type="button">Logout</button>
+        <a class="gt-btn gt-btn--secondary" id="forgot-password" href="/members/reset-password/">Forgot password?</a>
+      </div>
+      <div class="toolbar">
+        <a class="gt-btn gt-btn--secondary" id="open-compare" href="/compare/" hidden style="display:none">Open Compare</a>
+        <a class="gt-btn gt-btn--secondary" id="instructions" href="/members/instructions/" hidden style="display:none">Instructions</a>
+        <button class="gt-btn gt-btn--secondary" id="export-highlights" hidden style="display:none" type="button">Export Highlights</button>
+        <button class="gt-btn gt-btn--secondary" id="export-highlights-md" hidden style="display:none" type="button">Export Markdown</button>
+        <button class="gt-btn gt-btn--secondary" id="export-highlights-csv" hidden style="display:none" type="button">Export CSV</button>
+      </div>
+      <label class="member-toggle" id="bookmarks-toggle" hidden style="display:none"><input id="show-bookmarks-in-sidebar" type="checkbox"> Show saved bookmarks in the book sidebar</label>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">Saved Highlights</h2>
+      <div id="research-summary" class="highlight-item"></div>
+      <div id="highlight-list"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">Recently Viewed</h2>
+      <div id="recent-books"></div>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">API Access</h2>
+      <p class="muted" id="api-status">Sign in to view API access.</p>
+      <div class="toolbar">
+        <button class="gt-btn gt-btn--secondary" id="rotate-api-token" type="button">Create / Rotate Token</button>
+      </div>
+      <label>Current token <textarea id="api-token-output" readonly placeholder="A new token is shown only once after rotation."></textarea></label>
+      <p class="muted">Use this as a bearer token for the Clovis Star catalog API. <a href="/api/">View API documentation</a>.</p>
+    </section>
+  </main>
+  <script type="module">
+    import {
+      deleteHighlight,
+      escapeHtml,
+      getAuth,
+      groupHighlightsByBook,
+      highlightBookHref,
+      highlightBookLabel,
+      loadApiProfile,
+      loadAccountHighlights,
+      loadMemberPreferences,
+      loadRecentBooks,
+      loadSiteBootstrap,
+      loginAccount,
+      logoutAccount,
+      registerAccount,
+      rotateApiToken,
+      saveMemberPreferences,
+      syncAuthFromServer,
+      updateHighlightDetails,
+      installCopyAttribution
+    } from "/assets/js/app.js?v=1.1.17-youtube-embed";
+
+    const bootstrap = await loadSiteBootstrap();
+    document.getElementById("site-version").textContent = `Site version ${bootstrap.version || "unknown"}${bootstrap.releaseName ? ` - ${bootstrap.releaseName}` : ""}`;
+    installCopyAttribution(bootstrap.siteSettings);
+
+    function setAuthMessage(message, isError = false) {
+      const status = document.getElementById("auth-status");
+      status.textContent = message;
+      status.classList.toggle("error-text", Boolean(isError));
+    }
+
+    function updateAuthStatus() {
+      const auth = getAuth();
+      const signedIn = Boolean(auth?.user);
+      setAuthMessage(signedIn
+        ? "Signed in as " + (auth.user.displayName || auth.user.email) + "."
+        : "Sign in or register to view saved highlights and notes.");
+      document.getElementById("register").disabled = !bootstrap.siteSettings?.members?.allowRegistration;
+      const setVisible = (id, visible) => {
+        const element = document.getElementById(id);
+        element.hidden = !visible;
+        element.style.display = visible ? "" : "none";
+      };
+      for (const id of ["logout", "open-compare", "instructions", "export-highlights", "export-highlights-md", "export-highlights-csv", "bookmarks-toggle"]) setVisible(id, signedIn);
+      setVisible("forgot-password", !signedIn);
+    }
+
+    async function refreshMemberDashboard() {
+      updateAuthStatus();
+      await renderApiProfile();
+      const preferences = await loadMemberPreferences();
+      document.getElementById("show-bookmarks-in-sidebar").checked = Boolean(preferences.showBookmarksInSidebar);
+      await renderHighlights();
+      renderRecentBooks();
+    }
+
+    async function renderApiProfile() {
+      const auth = getAuth();
+      const status = document.getElementById("api-status");
+      const button = document.getElementById("rotate-api-token");
+      if (!auth?.user) {
+        status.textContent = "Sign in to view API access.";
+        button.disabled = true;
+        return;
+      }
+      const api = await loadApiProfile();
+      button.disabled = !api.apiEnabled;
+      status.textContent = api.apiEnabled
+        ? `API enabled. ${api.hasToken ? `Active token prefix: ${api.tokenPrefix}...` : "No token has been created yet."}`
+        : "API access is not enabled for this account yet.";
+    }
+
+    async function renderHighlights() {
+      const items = await loadAccountHighlights();
+      const folders = new Set(items.map((item) => item.folder || "General"));
+      const tags = new Set(items.flatMap((item) => item.tags || []));
+      const filterText = (document.getElementById("highlight-filter-text")?.value || "").trim().toLowerCase();
+      const folderFilter = document.getElementById("highlight-filter-folder")?.value || "";
+      const tagFilter = document.getElementById("highlight-filter-tag")?.value || "";
+      const filteredItems = items.filter((item) => {
+        const haystack = `${item.bookTitle || ""} ${item.bookSlug || ""} ${item.text || ""} ${item.note || ""} ${item.folder || ""} ${(item.tags || []).join(" ")}`.toLowerCase();
+        if (filterText && !haystack.includes(filterText)) return false;
+        if (folderFilter && (item.folder || "General") !== folderFilter) return false;
+        if (tagFilter && !(item.tags || []).includes(tagFilter)) return false;
+        return true;
+      });
+      const groups = groupHighlightsByBook(filteredItems);
+      document.getElementById("research-summary").innerHTML = `
+        <p><strong>${items.length}</strong> saved highlight(s)</p>
+        <p class="muted">${filteredItems.length} highlight(s) shown by the current filter.</p>
+        <div class="filter-grid">
+          <label>Search saved research <input id="highlight-filter-text" type="search" value="${escapeHtml(document.getElementById("highlight-filter-text")?.value || "")}" placeholder="Book, note, highlight, tag"></label>
+          <label>Folder <select id="highlight-filter-folder"></select></label>
+          <label>Tag <select id="highlight-filter-tag"></select></label>
+        </div>
+        <p class="muted">${folders.size} folder(s) · ${tags.size} tag(s)</p>
+      `;
+      updateFilterSelect("highlight-filter-folder", folders, "All folders", folderFilter);
+      updateFilterSelect("highlight-filter-tag", tags, "All tags", tagFilter);
+      document.getElementById("highlight-list").innerHTML = Object.entries(groups).map(([bookTitle, highlights]) => `
+        <details class="highlight-book-group" open>
+          <summary><strong>${escapeHtml(bookTitle)}</strong> <span class="muted">${highlights.length} saved</span></summary>
+          ${highlights.map((item) => `
+            <article class="highlight-item">
+              <span class="status-pill">${escapeHtml(item.color)}</span>
+              <p><a href="${highlightBookHref(item)}">${escapeHtml(highlightBookLabel(item))}</a></p>
+              <p class="highlight-${escapeHtml(item.color)}">${escapeHtml(item.text)}</p>
+              <label>Research note<textarea data-note="${escapeHtml(item.id)}">${escapeHtml(item.note || "")}</textarea></label>
+              <label>Folder <input data-folder="${escapeHtml(item.id)}" type="text" value="${escapeHtml(item.folder || "General")}"></label>
+              <label>Tags <input data-tags="${escapeHtml(item.id)}" type="text" value="${escapeHtml((item.tags || []).join(", "))}"></label>
+              <p class="muted">${escapeHtml(item.createdAt || "")}</p>
+              <div class="toolbar">
+                <button class="gt-btn gt-btn--secondary" data-save-note="${escapeHtml(item.id)}" type="button">Save Note</button>
+                <button class="gt-btn gt-btn--secondary" data-delete="${escapeHtml(item.id)}" type="button">Delete</button>
+              </div>
+            </article>
+          `).join("")}
+        </details>
+      `).join("") || "<p class='muted'>No saved highlights yet.</p>";
+    }
+
+    function updateFilterSelect(id, values, label, selected = "") {
+      const select = document.getElementById(id);
+      if (!select) return;
+      const ordered = [...values].filter(Boolean).sort((a, b) => a.localeCompare(b));
+      select.innerHTML = `<option value="">${escapeHtml(label)}</option>${ordered.map((value) => `<option value="${escapeHtml(value)}" ${selected === value ? "selected" : ""}>${escapeHtml(value)}</option>`).join("")}`;
+    }
+
+    function renderRecentBooks() {
+      const recent = loadRecentBooks();
+      document.getElementById("recent-books").innerHTML = recent.length
+        ? recent.map((book) => `<a class="highlight-item reader-bookmark-link" href="/books/?book=${encodeURIComponent(book.slug)}"><strong>${escapeHtml(book.title)}</strong><p class="muted">${escapeHtml(book.collection || "Library")} · ${escapeHtml(book.viewedAt || "")}</p></a>`).join("")
+        : "<p class='muted'>No recent books yet.</p>";
+    }
+
+    async function handleRegister() {
+      try {
+        await registerAccount({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value, displayName: document.getElementById("auth-name").value });
+        await refreshMemberDashboard();
+      } catch (error) { setAuthMessage(error.message, true); }
+    }
+
+    async function handleLogin() {
+      try {
+        await loginAccount({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value });
+        await refreshMemberDashboard();
+      } catch (error) { setAuthMessage(error.message, true); }
+    }
+
+    async function handleLogout() {
+      await logoutAccount();
+      setAuthMessage("Signed out.");
+      await renderApiProfile();
+      document.getElementById("show-bookmarks-in-sidebar").checked = false;
+      await renderHighlights();
+      renderRecentBooks();
+    }
+
+    async function handleRotateApiToken() {
+      try {
+        setAuthMessage("Creating API token...");
+        const api = await rotateApiToken();
+        document.getElementById("api-token-output").value = api?.token || "";
+        await renderApiProfile();
+        setAuthMessage("API token created. Copy it now; it is shown only once.");
+      } catch (error) { setAuthMessage(error.message, true); }
+    }
+
+    document.getElementById("register").onclick = handleRegister;
+    document.getElementById("login").onclick = handleLogin;
+    document.getElementById("logout").onclick = handleLogout;
+    document.getElementById("rotate-api-token").onclick = handleRotateApiToken;
+    document.addEventListener("click", (event) => {
+      if (event.target.closest("#rotate-api-token")) {
+        event.preventDefault();
+        handleRotateApiToken();
+      }
+    });
+
+    document.getElementById("show-bookmarks-in-sidebar").addEventListener("change", async (event) => {
+      try {
+        await saveMemberPreferences({ showBookmarksInSidebar: event.target.checked });
+      } catch (error) {
+        event.target.checked = !event.target.checked;
+        setAuthMessage(error.message, true);
+      }
+    });
+
+    document.getElementById("research-summary").addEventListener("input", (event) => {
+      if (event.target.closest("#highlight-filter-text")) renderHighlights();
+    });
+
+    document.getElementById("research-summary").addEventListener("change", (event) => {
+      if (event.target.closest("#highlight-filter-folder, #highlight-filter-tag")) renderHighlights();
+    });
+
+    document.getElementById("highlight-list").addEventListener("click", async (event) => {
+      const save = event.target.closest("[data-save-note]");
+      if (save) {
+          const id = save.dataset.saveNote;
+          const note = document.querySelector(`[data-note="${CSS.escape(id)}"]`)?.value || "";
+          const folder = document.querySelector(`[data-folder="${CSS.escape(id)}"]`)?.value || "General";
+          const tags = document.querySelector(`[data-tags="${CSS.escape(id)}"]`)?.value || "";
+        try {
+          await updateHighlightDetails(id, { note, folder, tags });
+          await renderHighlights();
+        } catch (error) { setAuthMessage(error.message, true); }
+        return;
+      }
+      const remove = event.target.closest("[data-delete]");
+      if (!remove) return;
+      await deleteHighlight(remove.dataset.delete);
+      await renderHighlights();
+    });
+
+    document.getElementById("export-highlights").addEventListener("click", async () => {
+      const blob = new Blob([JSON.stringify(await loadAccountHighlights(), null, 2)], { type: "application/json" });
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(blob), download: "clovisstar-highlights.json" });
+      a.click();
+    });
+
+    document.getElementById("export-highlights-md").addEventListener("click", async () => {
+      const items = await loadAccountHighlights();
+      const markdown = items.map((item) => `## ${item.bookTitle || item.bookSlug}\n\n${item.text}\n\nNote: ${item.note || ""}\n\nFolder: ${item.folder || "General"}\nTags: ${(item.tags || []).join(", ")}\n`).join("\n");
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([markdown], { type: "text/markdown" })), download: "clovisstar-highlights.md" });
+      a.click();
+    });
+
+    document.getElementById("export-highlights-csv").addEventListener("click", async () => {
+      const items = await loadAccountHighlights();
+      const esc = (value) => `"${String(value || "").replaceAll('"', '""')}"`;
+      const csv = ["Book,Folder,Tags,Highlight,Note,Created"].concat(items.map((item) => [item.bookTitle || item.bookSlug, item.folder || "General", (item.tags || []).join("; "), item.text, item.note, item.createdAt].map(esc).join(","))).join("\n");
+      const a = Object.assign(document.createElement("a"), { href: URL.createObjectURL(new Blob([csv], { type: "text/csv" })), download: "clovisstar-highlights.csv" });
+      a.click();
+    });
+
+    await syncAuthFromServer();
+    await refreshMemberDashboard();
+  </script>
+  <script src="/assets/js/thoth-live.js?v=20260914c" defer></script>
+</body>
+</html>
+

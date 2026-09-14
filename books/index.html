@@ -1,8 +1,311 @@
-<!DOCTYPE html>
-<html><head>
-<meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=../toc.html">
-<title>Redirecting…</title>
-</head><body>
-<p>Redirecting to <a href="../toc.html">Table of Contents</a>…</p>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Books - Clovis Star</title>
+  <meta name="description" content="Browse, read, highlight, and compare the Clovis Star research library.">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=featured-video-article-mobile2-20260716">
+  <link rel="stylesheet" href="/assets/css/thoth-live.css?v=20260913c">
+</head>
+<body>
+  <header class="gt-header">
+    <div class="gt-container gt-header__inner">
+      <a class="gt-header__brand" href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">GNOSTIC LIBRARY</div></a>
+      <nav class="gt-header__nav" aria-label="Primary"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/members/">Members</a></li><li><a href="/about/">About</a></li><li><a href="/#collections">Collections</a></li></ul></nav>
+    </div>
+  </header>
+  <main class="gt-container gt-container--wide">
+    <div class="reader-layout">
+      <aside class="panel">
+        <h1 class="section-title">Books</h1>
+        <input id="search" type="search" placeholder="Search titles and text" aria-label="Search books">
+        <div class="toolbar">
+          <select id="collection"></select>
+          <select id="quality" aria-label="Completion status">
+            <option value="">All Statuses</option>
+            <option value="completed">Completed</option>
+            <option value="ready">Ready</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="source">Needs Source</option>
+          </select>
+          <label class="member-toggle"><input id="has-source" type="checkbox"> Has source</label>
+          <label class="member-toggle"><input id="has-media" type="checkbox"> Has media</label>
+        </div>
+        <div class="filter-grid">
+          <label>Source status
+            <select id="source-confidence">
+              <option value="">All Sources</option>
+              <option value="verified">Verified</option>
+              <option value="source-linked">Source Linked</option>
+              <option value="local-source">Local Source</option>
+              <option value="needs-citation">Needs Citation</option>
+            </select>
+          </label>
+          <label>Media type
+            <select id="media-category">
+              <option value="">All Media</option>
+            </select>
+          </label>
+          <label>Min words <input id="min-words" type="number" min="0" step="100" inputmode="numeric"></label>
+          <label>Max words <input id="max-words" type="number" min="0" step="100" inputmode="numeric"></label>
+        </div>
+        <section id="member-bookmarks" class="reader-bookmarks" hidden>
+          <h2 class="reader-bookmarks__title">Saved Bookmarks</h2>
+          <div id="member-bookmark-list"></div>
+        </section>
+        <div id="book-list" class="book-grid"></div>
+      </aside>
+      <article class="panel">
+        <h2 id="reader-title" class="book-title">Select a book</h2>
+        <p id="reader-meta" class="muted"></p>
+        <div id="source-badge" class="source-badge" hidden></div>
+        <div id="reader-status" class="reader-status" hidden></div>
+        <section id="source-metadata" class="reader-status" hidden></section>
+        <div class="toolbar">
+          <select id="highlight-color" aria-label="Highlight color">
+            <option value="yellow">Yellow</option><option value="green">Green</option><option value="blue">Blue</option><option value="pink">Pink</option><option value="gold">Gold</option>
+          </select>
+          <input id="highlight-note" type="text" placeholder="Optional note for this highlight" aria-label="Highlight note">
+          <input id="highlight-folder" type="text" placeholder="Folder" aria-label="Highlight folder">
+          <input id="highlight-tags" type="text" placeholder="Tags, comma separated" aria-label="Highlight tags">
+          <button class="gt-btn gt-btn--secondary" id="save-highlight" hidden style="display:none">Save Highlight</button>
+          <a class="gt-btn gt-btn--secondary" href="/compare/">Open Compare</a>
+          <a class="gt-btn gt-btn--secondary" href="/members/">Members</a>
+        </div>
+        <div id="reader-content" class="reader-content"></div>
+      </article>
+    </div>
+  </main>
+  <script type="module">
+    import { loadBooks, loadBook, renderBookContent, saveHighlight, currentSelectionText, escapeHtml, getAuth, loadAccountHighlights, loadMemberPreferences, highlightBookHref, highlightBookLabel, syncAuthFromServer, loadSiteBootstrap, installCopyAttribution, searchLibrary, recordRecentBook } from "/assets/js/app.js?v=featured-video-article-mobile2-20260716";
+
+    const params = new URLSearchParams(location.search);
+    const bootstrap = await loadSiteBootstrap();
+    installCopyAttribution(bootstrap.siteSettings);
+    const statusRank = { completed: 0, reviewed: 1, source: 2, draft: 3 };
+    const books = (await loadBooks())
+      .filter((book) => book.visibility !== "private")
+      .sort((a, b) => {
+        const byStatus = (statusRank[a.quality?.status] ?? 9) - (statusRank[b.quality?.status] ?? 9);
+        if (byStatus) return byStatus;
+        return String(a.title || "").localeCompare(String(b.title || ""));
+      });
+    const list = document.getElementById("book-list");
+    const search = document.getElementById("search");
+    const collection = document.getElementById("collection");
+    const quality = document.getElementById("quality");
+    const hasSource = document.getElementById("has-source");
+    const hasMedia = document.getElementById("has-media");
+    const sourceConfidence = document.getElementById("source-confidence");
+    const mediaCategory = document.getElementById("media-category");
+    const minWords = document.getElementById("min-words");
+    const maxWords = document.getElementById("max-words");
+    const readerTitle = document.getElementById("reader-title");
+    const readerMeta = document.getElementById("reader-meta");
+    const readerStatus = document.getElementById("reader-status");
+    const sourceBadge = document.getElementById("source-badge");
+    const sourceMetadata = document.getElementById("source-metadata");
+    const readerContent = document.getElementById("reader-content");
+    const bookmarkShell = document.getElementById("member-bookmarks");
+    const bookmarkList = document.getElementById("member-bookmark-list");
+    let currentBook = null;
+
+    const collections = ["All Collections", ...new Set(books.map((book) => book.collection || "Library"))];
+    collection.innerHTML = collections.map((name) => `<option>${escapeHtml(name)}</option>`).join("");
+    const mediaCategories = [...new Set(books.flatMap((book) => (book.media || []).map((item) => item.category || item.type || "").filter(Boolean)))].sort((a, b) => a.localeCompare(b));
+    mediaCategory.innerHTML += mediaCategories.map((name) => `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`).join("");
+    if (params.get("collection")) collection.value = params.get("collection");
+    if (params.get("q")) search.value = params.get("q");
+    if (params.get("sourceConfidence")) sourceConfidence.value = params.get("sourceConfidence");
+    if (params.get("mediaCategory")) mediaCategory.value = params.get("mediaCategory");
+
+    let searchTimer = null;
+    async function filterBooks() {
+      const q = search.value.toLowerCase();
+      const c = collection.value;
+      let found = books.filter((book) => (!q || `${book.title} ${book.collection} ${book.excerpt}`.toLowerCase().includes(q)) && (c === "All Collections" || (book.collection || "Library") === c));
+      if (quality.value) found = found.filter((book) => (book.quality?.status || book.reviewStatus || "") === quality.value);
+      if (hasSource.checked) found = found.filter((book) => book.sourceMetadata?.sourceUrl || book.sourceMetadata?.archiveUrl || book.sourceFile);
+      if (hasMedia.checked) found = found.filter((book) => (book.media || []).length);
+      if (sourceConfidence.value) found = found.filter((book) => (book.sourceMetadata?.confidence || "needs-citation") === sourceConfidence.value);
+      if (mediaCategory.value) found = found.filter((book) => (book.media || []).some((item) => (item.category || item.type || "") === mediaCategory.value));
+      if (minWords.value) found = found.filter((book) => Number(book.wordCount || 0) >= Number(minWords.value || 0));
+      if (maxWords.value) found = found.filter((book) => Number(book.wordCount || 0) <= Number(maxWords.value || 0));
+      if (q.length > 2 || quality.value || hasSource.checked || hasMedia.checked || sourceConfidence.value || mediaCategory.value || minWords.value || maxWords.value) {
+        try {
+          const remote = await searchLibrary(q, {
+            collection: c === "All Collections" ? "" : c,
+            quality: quality.value,
+            hasSource: hasSource.checked ? "1" : "",
+            hasMedia: hasMedia.checked ? "1" : "",
+            sourceConfidence: sourceConfidence.value,
+            mediaCategory: mediaCategory.value,
+            minWords: minWords.value,
+            maxWords: maxWords.value
+          });
+          const bySlug = new Map(books.map((book) => [book.slug, book]));
+          found = (remote.results || []).map((item) => bySlug.get(item.slug)).filter(Boolean);
+        } catch {}
+      }
+      list.innerHTML = found.slice(0, 200).map((book) => `<button class="book-card" data-slug="${book.slug}"><h3>${escapeHtml(book.title)}</h3><p class="muted">${escapeHtml(book.collection || "Library")}</p><p class="muted">${Number(book.wordCount || 0).toLocaleString()} words</p><span class="status-pill">${escapeHtml(book.quality?.status || book.reviewStatus || "")}</span> <span class="status-pill">${escapeHtml(book.sourceMetadata?.confidence || "needs-citation")}</span></button>`).join("");
+      return found;
+    }
+
+    function queueFilterBooks() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => filterBooks(), 180);
+    }
+
+    function renderSourceMetadata(book) {
+      const source = book.sourceMetadata || {};
+      const confidence = source.confidence || "needs-citation";
+      const badgeLabels = {
+        "verified": "Verified source",
+        "source-linked": "Source linked",
+        "local-source": "Local source",
+        "needs-citation": "Needs citation"
+      };
+      sourceBadge.hidden = !source.confidence;
+      sourceBadge.className = `source-badge source-badge--${escapeHtml(confidence)}`;
+      sourceBadge.textContent = badgeLabels[confidence] || "Source review";
+      const links = [
+        source.sourceUrl ? `<a href="${escapeHtml(source.sourceUrl)}" rel="nofollow noopener">Source</a>` : "",
+        source.archiveUrl ? `<a href="${escapeHtml(source.archiveUrl)}" rel="nofollow noopener">Archive</a>` : ""
+      ].filter(Boolean).join(" · ");
+      const rows = [
+        source.translator ? `<p><strong>Translator:</strong> ${escapeHtml(source.translator)}</p>` : "",
+        source.editor ? `<p><strong>Editor:</strong> ${escapeHtml(source.editor)}</p>` : "",
+        source.publicationDate ? `<p><strong>Publication:</strong> ${escapeHtml(source.publicationDate)}</p>` : "",
+        source.license || source.publicDomain ? `<p><strong>Rights:</strong> ${escapeHtml(source.publicDomain ? "Public domain" : source.license)}</p>` : "",
+        source.confidence ? `<p><strong>Source status:</strong> ${escapeHtml(source.confidence)}${source.sourceType ? ` - ${escapeHtml(source.sourceType)}` : ""}</p>` : "",
+        links ? `<p><strong>Reference:</strong> ${links}</p>` : "",
+        source.citation ? `<p><strong>Citation:</strong> ${escapeHtml(source.citation)}</p>` : "",
+        source.notes ? `<p class="muted">${escapeHtml(source.notes)}</p>` : ""
+      ].filter(Boolean);
+      sourceMetadata.hidden = rows.length === 0;
+      sourceMetadata.innerHTML = rows.length ? `<h3>Source & Citation</h3>${rows.join("")}` : "";
+    }
+
+    async function openBook(slug) {
+      try {
+        currentBook = await loadBook(slug);
+        const qualityStatus = currentBook.quality?.status || "source";
+        const qualityIssues = Array.isArray(currentBook.quality?.issues) ? currentBook.quality.issues.length : 0;
+        readerTitle.textContent = currentBook.title;
+        readerMeta.textContent = `${currentBook.collection || "Library"} - ${Number(currentBook.wordCount || 0).toLocaleString()} words - ${qualityStatus}`;
+        readerStatus.hidden = false;
+        if (qualityStatus === "completed") {
+          readerStatus.className = "reader-status reader-status--ok";
+          readerStatus.textContent = "This text is in the cleaned public reading set.";
+        } else {
+          readerStatus.className = "reader-status reader-status--warning";
+          readerStatus.textContent = qualityIssues
+            ? `This text is still under repair or verification. ${qualityIssues} flagged content issue(s) remain in the review queue.`
+            : "This text is still under repair or verification and may contain source markup or incomplete passages.";
+        }
+        renderBookContent(readerContent, currentBook);
+        renderSourceMetadata(currentBook);
+        recordRecentBook(currentBook);
+        const next = new URLSearchParams();
+        next.set("book", slug);
+        if (collection.value && collection.value !== "All Collections") next.set("collection", collection.value);
+        if (search.value.trim()) next.set("q", search.value.trim());
+        if (sourceConfidence.value) next.set("sourceConfidence", sourceConfidence.value);
+        if (mediaCategory.value) next.set("mediaCategory", mediaCategory.value);
+        history.replaceState(null, "", `/books/?${next.toString()}`);
+      } catch (error) {
+        currentBook = null;
+        readerTitle.textContent = "Text unavailable";
+        readerMeta.textContent = "This record is indexed, but the readable text file is missing or still being repaired.";
+        readerStatus.hidden = false;
+        readerStatus.className = "reader-status reader-status--warning";
+        readerStatus.textContent = "This record is not ready for public reading yet.";
+        sourceBadge.hidden = true;
+        sourceMetadata.hidden = true;
+        readerContent.innerHTML = `
+          <div class="reader-empty-state">
+            <p class="muted">The selected text is not ready for public reading yet.</p>
+            <p class="muted">${escapeHtml(error?.message || "Book load failed.")}</p>
+          </div>
+        `;
+      }
+    }
+
+    async function renderMemberBookmarks() {
+      const auth = getAuth();
+      const saveHighlightButton = document.getElementById("save-highlight");
+      saveHighlightButton.hidden = !auth?.user;
+      saveHighlightButton.style.display = auth?.user ? "" : "none";
+      if (!auth?.user) {
+        bookmarkShell.hidden = true;
+        bookmarkList.innerHTML = "";
+        return;
+      }
+      const preferences = await loadMemberPreferences();
+      if (!preferences.showBookmarksInSidebar) {
+        bookmarkShell.hidden = true;
+        bookmarkList.innerHTML = "";
+        return;
+      }
+      const highlights = await loadAccountHighlights();
+      bookmarkShell.hidden = false;
+      bookmarkList.innerHTML = highlights.length
+        ? highlights.slice(0, 24).map((item) => `
+            <a class="highlight-item reader-bookmark-link" href="${highlightBookHref(item)}">
+              <span class="status-pill">${escapeHtml(item.color)}</span>
+              <strong>${escapeHtml(highlightBookLabel(item))}</strong>
+              <p class="muted">${escapeHtml((item.text || "").slice(0, 120))}</p>
+              <p class="muted">${escapeHtml(item.folder || "General")}${(item.tags || []).length ? ` - ${escapeHtml(item.tags.join(", "))}` : ""}</p>
+            </a>
+          `).join("")
+        : "<p class='muted'>No saved bookmarks yet.</p>";
+    }
+
+    list.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-slug]");
+      if (button) openBook(button.dataset.slug);
+    });
+    search.addEventListener("input", queueFilterBooks);
+    collection.addEventListener("change", filterBooks);
+    quality.addEventListener("change", filterBooks);
+    hasSource.addEventListener("change", filterBooks);
+    hasMedia.addEventListener("change", filterBooks);
+    sourceConfidence.addEventListener("change", filterBooks);
+    mediaCategory.addEventListener("change", filterBooks);
+    minWords.addEventListener("input", queueFilterBooks);
+    maxWords.addEventListener("input", queueFilterBooks);
+    document.getElementById("save-highlight").addEventListener("click", async () => {
+      if (!currentBook) return alert("This text is not available for highlighting yet.");
+      const text = currentSelectionText();
+      if (!text) return alert("Select text in the reader first.");
+      await saveHighlight({
+        bookSlug: currentBook?.slug,
+        bookTitle: currentBook?.title || readerTitle.textContent,
+        color: document.getElementById("highlight-color").value,
+        note: document.getElementById("highlight-note").value.trim(),
+        folder: document.getElementById("highlight-folder").value.trim() || "General",
+        tags: document.getElementById("highlight-tags").value.trim(),
+        text
+      });
+      alert(getAuth()?.user ? "Highlight saved to your profile." : "Highlight saved locally. Sign in on Members to save it to an account.");
+      document.getElementById("highlight-note").value = "";
+      document.getElementById("highlight-folder").value = "";
+      document.getElementById("highlight-tags").value = "";
+      await renderMemberBookmarks();
+    });
+
+    const initialFound = await filterBooks();
+    await syncAuthFromServer();
+    await renderMemberBookmarks();
+    openBook(params.get("book") || initialFound[0]?.slug || books[0]?.slug);
+  </script>
+  <script src="/assets/js/thoth-live.js?v=20260914c" defer></script>
+</body>
+</html>
+

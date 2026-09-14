@@ -1,0 +1,41 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+
+const sourceRoot = process.env.ENKI_TRANSCRIPTS_ROOT || '/home/clovisstar/public_html/enki-transcripts';
+const timeoutMs = Number(process.env.THOTH_PROVIDER_TIMEOUT_MS || 120000);
+async function request(url, options) {
+  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try { const response = await fetch(url, { ...options, signal: controller.signal }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(`provider_http_${response.status}`); return body; } finally { clearTimeout(timer); }
+}
+async function transcriptFiles(dir, out = []) {
+  for (const entry of await fs.readdir(dir, { withFileTypes: true }).catch(() => [])) { const full = path.join(dir, entry.name); if (entry.isDirectory()) await transcriptFiles(full, out); else if (entry.name === 'transcript.txt') out.push(full); }
+  return out;
+}
+async function contextFor(prompt) {
+  const terms = [...new Set(String(prompt).toLowerCase().split(/\W+/).filter((term) => term.length > 3))].slice(0, 10);
+  const files = await transcriptFiles(sourceRoot); const matches = [];
+  for (const file of files) {
+    const text = await fs.readFile(file, 'utf8').catch(() => ''); const lower = text.toLowerCase(); const title = path.basename(path.dirname(file)).toLowerCase();
+    for (let start = 0; start < text.length; start += 900) {
+      const excerpt = text.slice(start, start + 1400); const chunk = excerpt.toLowerCase();
+      const score = terms.reduce((total, term) => total + (chunk.includes(term) ? 4 + Math.min(3, chunk.split(term).length - 1) : 0) + (title.includes(term) ? 5 : 0), 0);
+      if (score) matches.push({ file, score, excerpt, start });
+    }
+  }
+  const selected = []; const seen = new Set();
+  for (const item of matches.sort((a, b) => b.score - a.score)) { if (seen.has(item.file) || selected.length >= 3) continue; selected.push(item); seen.add(item.file); }
+  return selected;
+}
+async function generate(prompt, context) {
+  const composed = `Answer only from the supplied Clovis Star sources. If the sources do not establish an answer, say so. Give a concise answer and include source paths in a Sources section.\n\nQuestion: ${prompt}\n\nSources:\n${context.map((item) => `FILE: ${item.file}\n${item.excerpt.slice(0, 800)}`).join('\n\n')}`;
+  const providers = [{ name: 'ollama', model: process.env.THOTH_OLLAMA_MODEL || 'qwen3:0.6b', url: process.env.THOTH_OLLAMA_URL || 'http://127.0.0.1:11434' }, { name: 'openrouter-auto-relay', model: 'openrouter/auto', url: process.env.THOTH_OPENROUTER_RELAY_URL || 'http://100.116.72.58:19311' }, { name: 'openrouter-auto', model: 'openrouter/auto', url: 'https://openrouter.ai/api' }];
+  const failures = [];
+  for (const provider of providers) { try {
+    if (provider.name === 'ollama') { const body = await request(`${provider.url}/api/generate`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ model: provider.model, prompt: composed, stream: false, think: false, options: { num_ctx: 2048, num_predict: 96, temperature: 0.2 } }) }); return { provider: provider.name, model: provider.model, text: String(body.response || ''), sources: context.map(({ file }) => file) }; }
+    const key = process.env.OPENROUTER_API_KEY; const headers = { 'content-type': 'application/json', 'x-title': 'Clovis Star THOTH' }; if (!provider.name.endsWith('-relay')) { if (!key || key.startsWith('VAULT_REF_')) throw new Error('openrouter_key_not_mapped'); headers.authorization = `Bearer ${key}`; }
+    const body = await request(`${provider.url}/v1/chat/completions`, { method: 'POST', headers, body: JSON.stringify({ model: provider.model, messages: [{ role: 'user', content: composed }], max_tokens: 96 }) }); return { provider: provider.name, model: provider.model, text: String(body.choices?.[0]?.message?.content || ''), sources: context.map(({ file }) => file) };
+  } catch (error) { failures.push({ provider: provider.name, reason: error.message }); } }
+  const error = new Error('all_thoth_providers_failed'); error.failures = failures; throw error;
+}
+export async function answer(prompt) { const context = await contextFor(prompt); return generate(prompt, context); }
+

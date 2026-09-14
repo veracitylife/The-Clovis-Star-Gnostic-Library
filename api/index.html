@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Clovis Star catalog API documentation for approved members and third-party integrations.">
+  <title>Clovis Star API</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css">
+  <link rel="stylesheet" href="/assets/css/thoth-live.css?v=20260913c">
+</head>
+<body>
+  <header class="gt-header">
+    <div class="gt-container gt-header__inner">
+      <a class="gt-header__brand" href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">API</div></a>
+      <nav class="gt-header__nav" aria-label="Primary"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/members/">Members</a></li><li><a href="/about/">About</a></li><li><a href="/#collections">Collections</a></li></ul></nav>
+    </div>
+  </header>
+
+  <main class="gt-container gt-container--wide">
+    <section class="panel">
+      <h1 class="section-title">Catalog API</h1>
+      <p class="muted">Approved members can create one active token from the member dashboard. Send it as a bearer token with every catalog request.</p>
+      <pre><code>Authorization: Bearer YOUR_TOKEN</code></pre>
+      <p><a class="gt-btn gt-btn--secondary" href="/api/v1/openapi.json">OpenAPI JSON</a></p>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">Endpoints</h2>
+      <div class="book-grid">
+        <article class="book-card"><h3>Catalog</h3><p class="muted">GET /api/v1/catalog</p><p>Returns public book summaries, collection data, and current catalog statistics.</p></article>
+        <article class="book-card"><h3>Collections</h3><p class="muted">GET /api/v1/collections</p><p>Returns the available public collections and their book counts.</p></article>
+        <article class="book-card"><h3>Book</h3><p class="muted">GET /api/v1/books/{slug}</p><p>Returns one public book with clean paragraphs suitable for display in a partner app.</p></article>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2 class="section-title">Example</h2>
+      <pre><code>fetch("https://clovisstar.com/api/v1/catalog", {
+  headers: { authorization: "Bearer YOUR_TOKEN" }
+})</code></pre>
+      <p class="muted">Private books are never returned through the public API.</p>
+    </section>
+  </main>
+  <script src="/assets/js/thoth-live.js?v=20260914c" defer></script>
+</body>
+</html>
+

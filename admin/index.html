@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin - Clovis Star</title>
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon-64.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <link rel="stylesheet" href="/assets/css/styles.css?v=admin-editorial-20260618">
+</head>
+<body>
+  <header class="gt-header">
+    <div class="gt-container gt-header__inner">
+      <a href="/"><div class="gt-site-title">CLOVIS STAR</div><div class="gt-site-tagline">ADMIN</div></a>
+      <nav class="gt-header__nav"><ul class="gt-nav"><li><a href="/books/">Books</a></li><li><a href="/compare/">Compare</a></li><li><a href="/members/">Members</a></li><li><a href="/admin/">Admin</a></li></ul></nav>
+    </div>
+  </header>
+  <main class="gt-container gt-container--wide">
+    <h1 class="section-title">Configuration Dashboard</h1>
+    <p class="muted">Canonical content comes from the library JSON build. This dashboard stores admin settings, book overrides, and review decisions in the app backend.</p>
+    <p class="muted" id="site-version">Site version loading...</p>
+
+    <div class="admin-grid">
+      <section class="panel auth-card">
+        <h2 class="section-title">Admin Sign-In</h2>
+        <p class="muted" id="admin-auth-status">Sign in with an admin account to manage visibility, review queue, and runtime settings.</p>
+        <label>Email <input id="auth-email" type="text" autocomplete="email"></label>
+        <label>Password <input id="auth-password" type="password" autocomplete="current-password"></label>
+        <label>Display name <input id="auth-name" type="text" autocomplete="name"></label>
+        <div class="toolbar">
+          <button class="gt-btn gt-btn--primary" id="register" type="button">Register</button>
+          <button class="gt-btn gt-btn--secondary" id="login" type="button">Login</button>
+          <button class="gt-btn gt-btn--secondary" id="logout" type="button">Logout</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Library Statistics</h2>
+        <div id="stats-grid" class="stats-grid"></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">System Health</h2>
+        <div id="system-health" class="highlight-item"></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Settings</h2>
+        <div class="admin-settings-grid">
+          <fieldset>
+            <legend>Runtime</legend>
+            <label><input id="setting-dry-run" type="checkbox"> Dry run mode</label>
+            <label><input id="setting-approval-required" type="checkbox"> Approval required</label>
+          </fieldset>
+          <fieldset>
+            <legend>Members</legend>
+            <label><input id="setting-allow-registration" type="checkbox"> Allow new registration</label>
+            <label><input id="setting-default-bookmarks" type="checkbox"> Show bookmarks in sidebar by default</label>
+          </fieldset>
+          <fieldset>
+            <legend>Library</legend>
+            <label>Collection cards per visit <input id="setting-collection-limit" type="number" min="1" max="12"></label>
+            <label><input id="setting-shuffle-collections" type="checkbox"> Shuffle collection cards each visit</label>
+            <label><input id="setting-copy-attribution" type="checkbox"> Add source attribution to copied text</label>
+          </fieldset>
+          <fieldset>
+            <legend>Audio Foundation</legend>
+            <label><input id="setting-audio-enabled" type="checkbox"> Enable narration foundation</label>
+            <label><input id="setting-audio-expose-ui" type="checkbox"> Expose player UI on public pages</label>
+            <label>Default provider
+              <select id="setting-audio-provider">
+                <option value="openai">OpenAI</option>
+                <option value="elevenlabs">ElevenLabs</option>
+              </select>
+            </label>
+            <label>OpenAI model <input id="setting-openai-model" type="text"></label>
+            <label>OpenAI voice <input id="setting-openai-voice" type="text"></label>
+            <label>ElevenLabs model <input id="setting-elevenlabs-model" type="text"></label>
+            <label>ElevenLabs voice ID <input id="setting-elevenlabs-voice-id" type="text"></label>
+          </fieldset>
+          <fieldset>
+            <legend>Content Audit</legend>
+            <label><input id="setting-audit-enabled" type="checkbox"> Enable integrity audit</label>
+            <label><input id="setting-audit-review-queue" type="checkbox"> Feed findings into review queue</label>
+            <label>Max findings per book <input id="setting-audit-max-findings" type="number" min="1" max="10"></label>
+          </fieldset>
+          <fieldset>
+            <legend>Monitoring</legend>
+            <label><input id="setting-monitoring-enabled" type="checkbox"> Enable health monitoring</label>
+            <label>Alert email <input id="setting-monitoring-email" type="email" autocomplete="email"></label>
+            <label>Check interval minutes <input id="setting-monitoring-interval" type="number" min="5" max="1440"></label>
+          </fieldset>
+        </div>
+        <div class="toolbar">
+          <button class="gt-btn gt-btn--primary" id="save-settings" type="button">Save Settings</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Review Queue</h2>
+        <div id="review-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Content Operations</h2>
+        <div id="content-operations" class="highlight-item"></div>
+      </section>
+
+      <section class="panel" style="grid-column: 1 / -1;">
+        <h2 class="section-title">Editorial Issue Buckets</h2>
+        <p class="muted">Use these lists to prioritize content repairs, citation work, media fixes, and public-readiness checks.</p>
+        <div id="editorial-issues" class="issue-buckets"></div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Nightly QA Report</h2>
+        <div id="qa-report" class="highlight-item"></div>
+        <div class="toolbar">
+          <button class="gt-btn gt-btn--secondary" id="refresh-qa-report" type="button">Generate QA Report</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2 class="section-title">Source Completion Queue</h2>
+        <p class="muted">Private records held back from the public catalog until verified source text is added.</p>
+        <div id="source-completion-list"></div>
+      </section>
+
+      <section class="panel" style="grid-column: 1 / -1;">
+        <h2 class="section-title">Users & API Access</h2>
+        <div id="user-list" class="book-grid"></div>
+      </section>
+
+      <section class="panel" style="grid-column: 1 / -1;">
+        <h2 class="section-title">Book Overrides</h2>
+        <input id="book-filter" type="search" placeholder="Filter books">
+        <div id="book-list" class="book-grid"></div>
+      </section>
+    </div>
+  </main>
+  <script type="module">
+    import {
+      escapeHtml,
+      generateQaReport,
+      getAuth,
+      loadAdminBootstrap,
+      loadContentOperations,
+      loadQaReport,
+      loadSiteBootstrap,
+      loginAccount,
+      logoutAccount,
+      registerAccount,
+      runContentBatchAction,
+      saveAdminSettings,
+      syncAuthFromServer,
+      updateBookAdminState,
+      updateReviewItem,
+      updateUserApiAccess
+    } from "/assets/js/app.js?v=1.1.17-youtube-embed";
+
+    const statsGrid = document.getElementById("stats-grid");
+    const siteVersion = document.getElementById("site-version");
+    const reviewList = document.getElementById("review-list");
+    const contentOperations = document.getElementById("content-operations");
+    const editorialIssues = document.getElementById("editorial-issues");
+    const qaReport = document.getElementById("qa-report");
+    const sourceCompletionList = document.getElementById("source-completion-list");
+    const bookList = document.getElementById("book-list");
+    const userList = document.getElementById("user-list");
+    const systemHealth = document.getElementById("system-health");
+    const filter = document.getElementById("book-filter");
+    let state = { books: [], reviewQueue: [], sourceCompletionQueue: [], stats: {}, settings: {}, user: null, users: [], systemHealth: null, fileAssets: [], operations: null, qaReport: null };
+
+    const publicBootstrap = await loadSiteBootstrap();
+    siteVersion.textContent = `Site version ${publicBootstrap.version || "unknown"}${publicBootstrap.releaseName ? ` - ${publicBootstrap.releaseName}` : ""}`;
+
+    function setAdminStatus(message, isError = false) {
+      const status = document.getElementById("admin-auth-status");
+      status.textContent = message;
+      status.classList.toggle("error-text", Boolean(isError));
+    }
+
+    function showAdminError(error) {
+      setAdminStatus(error?.message || "The admin action could not be completed.", true);
+    }
+
+    function updateAuthStatus() {
+      const auth = getAuth();
+      setAdminStatus(auth?.user
+        ? `Signed in as ${auth.user.displayName || auth.user.email} (${auth.user.role || "member"}).`
+        : "Sign in with an admin account to manage visibility, review queue, and runtime settings.");
+      document.getElementById("register").disabled = state.settings?.members?.allowRegistration === false && !auth?.user;
+    }
+
+    function renderStats() {
+      const stats = state.stats || {};
+      siteVersion.textContent = `Site version ${state.version || "unknown"}${state.releaseName ? ` - ${state.releaseName}` : ""}`;
+      const cards = [
+        ["Public books", stats.publicBooks || 0],
+        ["Completed texts", stats.completedTexts || 0],
+        ["Collections", stats.collections || 0],
+        ["Indexed words", (stats.indexedWords || 0).toLocaleString()],
+        ["Open review items", stats.openReviewItems || 0]
+      ];
+      statsGrid.innerHTML = cards.map(([label, value]) => `<article class="stat-card"><strong>${escapeHtml(value)}</strong><span class="muted">${escapeHtml(label)}</span></article>`).join("");
+    }
+
+    function renderSystemHealth() {
+      const health = state.systemHealth || {};
+      const storage = health.storage || {};
+      const search = health.search || {};
+      const vector = health.vector || {};
+      const redis = health.redis || {};
+      const database = health.database || {};
+      systemHealth.innerHTML = `
+        <p><strong>Status:</strong> ${health.ok ? "Healthy" : "Needs attention"}</p>
+        <p class="muted">Database: ${escapeHtml(database.driver || "unknown")} ${database.ok === false ? "(error)" : "(ok)"}</p>
+        <p class="muted">Storage: ${escapeHtml(storage.driver || "unknown")} - ${escapeHtml(storage.rootPath || "")}</p>
+        <p class="muted">Uploaded files: ${escapeHtml(String(storage.fileCount || 0))} - ${escapeHtml(String(Math.round((storage.totalBytes || 0) / 1024 / 1024)))} MB</p>
+        <p class="muted">Search: ${escapeHtml(search.driver || "unknown")}</p>
+        <p class="muted">Vector: ${escapeHtml(vector.mode || "disabled")}</p>
+        <p class="muted">Queue: ${escapeHtml(redis.driver || "fallback")}</p>
+      `;
+    }
+
+    function renderSettings() {
+      const settings = state.settings || {};
+      document.getElementById("setting-dry-run").checked = Boolean(settings.runtime?.dryRun);
+      document.getElementById("setting-approval-required").checked = Boolean(settings.runtime?.approvalRequired);
+      document.getElementById("setting-allow-registration").checked = Boolean(settings.members?.allowRegistration);
+      document.getElementById("setting-default-bookmarks").checked = Boolean(settings.members?.showBookmarksInSidebarDefault);
+      document.getElementById("setting-collection-limit").value = String(settings.library?.collectionCardLimit || 12);
+      document.getElementById("setting-shuffle-collections").checked = Boolean(settings.library?.shuffleCollections);
+      document.getElementById("setting-copy-attribution").checked = Boolean(settings.library?.copyAttributionEnabled);
+      document.getElementById("setting-audio-enabled").checked = Boolean(settings.audio?.enabled);
+      document.getElementById("setting-audio-expose-ui").checked = Boolean(settings.audio?.exposePlayerUi);
+      document.getElementById("setting-audio-provider").value = settings.audio?.defaultProvider || "openai";
+      document.getElementById("setting-openai-model").value = settings.audio?.providers?.openai?.model || "gpt-4o-mini-tts";
+      document.getElementById("setting-openai-voice").value = settings.audio?.providers?.openai?.voice || "alloy";
+      document.getElementById("setting-elevenlabs-model").value = settings.audio?.providers?.elevenlabs?.model || "eleven_multilingual_v2";
+      document.getElementById("setting-elevenlabs-voice-id").value = settings.audio?.providers?.elevenlabs?.voiceId || "";
+      document.getElementById("setting-audit-enabled").checked = Boolean(settings.contentAudit?.enabled);
+      document.getElementById("setting-audit-review-queue").checked = Boolean(settings.contentAudit?.autoReviewQueue);
+      document.getElementById("setting-audit-max-findings").value = String(settings.contentAudit?.maxFindingsPerBook || 3);
+      document.getElementById("setting-monitoring-enabled").checked = Boolean(settings.monitoring?.enabled);
+      document.getElementById("setting-monitoring-email").value = settings.monitoring?.alertEmail || "";
+      document.getElementById("setting-monitoring-interval").value = String(settings.monitoring?.checkIntervalMinutes || 15);
+    }
+
+    function renderReviewQueue() {
+      reviewList.innerHTML = (state.reviewQueue || []).map((item) => `
+        <article class="highlight-item">
+          <p><strong>${escapeHtml(item.title || item.bookSlug)}</strong> <span class="status-pill">${escapeHtml(item.severity || "medium")}</span></p>
+          <p class="muted">${escapeHtml(item.summary || "")}</p>
+          <label>Status
+            <select data-review-status="${escapeHtml(item.id)}">
+              ${["open", "in_progress", "resolved"].map((status) => `<option value="${status}" ${item.status === status ? "selected" : ""}>${status}</option>`).join("")}
+            </select>
+          </label>
+          <label>Assigned to <input data-review-assigned="${escapeHtml(item.id)}" type="text" value="${escapeHtml(item.assignedTo || "")}"></label>
+          <label>Admin notes <textarea data-review-notes="${escapeHtml(item.id)}">${escapeHtml(item.adminNotes || "")}</textarea></label>
+          <button class="gt-btn gt-btn--secondary" data-save-review="${escapeHtml(item.id)}" type="button">Save Review Item</button>
+        </article>
+      `).join("") || "<p class='muted'>No review items in queue.</p>";
+    }
+
+    function renderContentOperations() {
+      const ops = state.operations || {};
+      const summary = ops.summary || {};
+      contentOperations.innerHTML = `
+        <p><strong>Incomplete:</strong> ${escapeHtml(summary.incomplete || 0)}</p>
+        <p><strong>Source gaps:</strong> ${escapeHtml(summary.sourceGaps || 0)}</p>
+        <p><strong>Visible markup:</strong> ${escapeHtml(summary.visibleMarkup || 0)}</p>
+        <p><strong>Broken media:</strong> ${escapeHtml(summary.brokenMedia || 0)}</p>
+        <p><strong>Missing citations:</strong> ${escapeHtml(summary.missingCitations || 0)}</p>
+        <p><strong>Needs provenance review:</strong> ${escapeHtml(summary.provenanceNeedsReview || 0)}</p>
+        <p><strong>Unresolved review:</strong> ${escapeHtml(summary.unresolvedReview || 0)}</p>
+      `;
+    }
+
+    function renderEditorialIssues() {
+      const ops = state.operations || {};
+      const buckets = [
+        ["Incomplete", "incomplete", ops.incomplete || []],
+        ["Source gaps", "sourceGaps", ops.sourceGaps || []],
+        ["Visible markup", "visibleMarkup", ops.visibleMarkup || []],
+        ["Broken media", "brokenMedia", ops.brokenMedia || []],
+        ["Missing citations", "missingCitations", ops.missingCitations || []],
+        ["Needs provenance review", "provenanceNeedsReview", ops.provenanceNeedsReview || []]
+      ];
+      editorialIssues.innerHTML = buckets.map(([title, bucket, items]) => `
+        <details class="issue-bucket" ${items.length ? "open" : ""}>
+          <summary><strong>${escapeHtml(title)}</strong> <span class="status-pill">${escapeHtml(items.length)}</span></summary>
+          <div class="toolbar">
+            <button class="gt-btn gt-btn--secondary" data-batch-bucket="${escapeHtml(bucket)}" data-batch-action="mark_in_progress" type="button">Mark in Progress</button>
+            <button class="gt-btn gt-btn--secondary" data-batch-bucket="${escapeHtml(bucket)}" data-batch-action="mark_verified" type="button">Mark Verified</button>
+            <button class="gt-btn gt-btn--secondary" data-batch-bucket="${escapeHtml(bucket)}" data-batch-action="hide_public" type="button">Hide Public</button>
+          </div>
+          <div class="issue-bucket__list">
+            ${items.slice(0, 80).map((item) => `
+              <article class="highlight-item">
+                <p><strong>${escapeHtml(item.title || item.slug)}</strong> <span class="status-pill">${escapeHtml(item.provenanceStatus || item.status || "review")}</span></p>
+                <p class="muted">${escapeHtml(item.collection || "Library")} - ${escapeHtml(item.slug)} - ${Number(item.wordCount || 0).toLocaleString()} words</p>
+                <p class="muted">Source: ${escapeHtml(item.sourceMetadata?.sourceUrl || item.sourceMetadata?.archiveUrl || item.sourceFile || (item.sourceUrls || [])[0] || "Needs verified source")}</p>
+                <div class="toolbar">
+                  <a class="gt-btn gt-btn--secondary" href="/books/?book=${encodeURIComponent(item.slug)}" target="_blank" rel="noopener">Open Book</a>
+                  <button class="gt-btn gt-btn--secondary" data-open-source-book="${escapeHtml(item.slug)}" type="button">Open Override</button>
+                </div>
+              </article>
+            `).join("") || "<p class='muted'>No items in this bucket.</p>"}
+          </div>
+        </details>
+      `).join("");
+    }
+
+    function renderQaReport() {
+      const report = state.qaReport || {};
+      const checks = report.checks || {};
+      qaReport.innerHTML = report.generatedAt ? `
+        <p><strong>Generated:</strong> ${escapeHtml(report.generatedAt)}</p>
+        <p><strong>Version:</strong> ${escapeHtml(report.version || "")}</p>
+        <p><strong>Pages checked:</strong> ${escapeHtml(checks.pageCount || 0)}</p>
+        <p><strong>Content operations:</strong> ${escapeHtml(JSON.stringify(checks.contentOperations || {}))}</p>
+      ` : "<p class='muted'>No QA report generated yet.</p>";
+    }
+
+    function renderSourceCompletionQueue() {
+      sourceCompletionList.innerHTML = (state.sourceCompletionQueue || []).map((item) => `
+        <article class="highlight-item">
+          <p><strong>${escapeHtml(item.title || item.slug)}</strong> <span class="status-pill">${escapeHtml(String(item.wordCount || 0))} words</span></p>
+          <p class="muted">${escapeHtml(item.collection || "Library")} - ${escapeHtml(item.slug)}</p>
+          <p class="muted">Source: ${escapeHtml(item.sourceFile || (item.sourceUrls || [])[0] || "Needs verified source")}</p>
+          <label>Admin notes <textarea data-book-notes="${escapeHtml(item.slug)}">${escapeHtml((state.books || []).find((book) => book.slug === item.slug)?.adminNotes || "")}</textarea></label>
+          <div class="toolbar">
+            <button class="gt-btn gt-btn--secondary" data-mark-source-progress="${escapeHtml(item.slug)}" type="button">Mark In Progress</button>
+            <button class="gt-btn gt-btn--secondary" data-open-source-book="${escapeHtml(item.slug)}" type="button">Open Admin Book</button>
+          </div>
+        </article>
+      `).join("") || "<p class='muted'>No source-completion items are waiting.</p>";
+    }
+
+    function renderUsers() {
+      userList.innerHTML = (state.users || []).map((item) => `
+        <article class="book-card">
+          <h3>${escapeHtml(item.displayName || item.email)}</h3>
+          <p class="muted">${escapeHtml(item.email)} - ${escapeHtml(item.role || "member")}</p>
+          <p class="muted">Token: ${item.apiTokenPrefix ? `${escapeHtml(item.apiTokenPrefix)}...` : "none"}</p>
+          <label><input data-user-api="${escapeHtml(item.id)}" type="checkbox" ${item.apiEnabled ? "checked" : ""}> Enable API</label>
+          <button class="gt-btn gt-btn--secondary" data-save-user-api="${escapeHtml(item.id)}" type="button">Save API Access</button>
+        </article>
+      `).join("") || "<p class='muted'>No users found.</p>";
+    }
+
+    function renderBooks() {
+      const q = filter.value.trim().toLowerCase();
+      const books = (state.books || []).filter((book) => !q || `${book.title} ${book.collection} ${book.slug}`.toLowerCase().includes(q)).slice(0, 250);
+      bookList.innerHTML = books.map((book) => `
+        <article class="book-card">
+          <h3>${escapeHtml(book.title)}</h3>
+          <p class="muted">${escapeHtml(book.collection || "Library")}</p>
+          <p class="muted">${escapeHtml(book.slug)} · ${escapeHtml(book.reviewStatus || book.quality?.status || "")}</p>
+          <label>Visibility
+            <select data-book-visibility="${escapeHtml(book.slug)}">
+              ${["public", "private"].map((value) => `<option value="${value}" ${book.visibility === value ? "selected" : ""}>${value}</option>`).join("")}
+            </select>
+          </label>
+          <label>Review status
+            <select data-book-review="${escapeHtml(book.slug)}">
+              ${["clean", "open", "in_progress", "resolved"].map((value) => `<option value="${value}" ${(book.reviewStatus || "clean") === value ? "selected" : ""}>${value}</option>`).join("")}
+            </select>
+          </label>
+          <label>Admin notes <textarea data-book-notes="${escapeHtml(book.slug)}">${escapeHtml(book.adminNotes || "")}</textarea></label>
+          <label>Source URL <input data-book-source-url="${escapeHtml(book.slug)}" type="text" value="${escapeHtml(book.sourceMetadata?.sourceUrl || "")}"></label>
+          <label>Archive URL <input data-book-archive-url="${escapeHtml(book.slug)}" type="text" value="${escapeHtml(book.sourceMetadata?.archiveUrl || "")}"></label>
+          <label>Translator <input data-book-translator="${escapeHtml(book.slug)}" type="text" value="${escapeHtml(book.sourceMetadata?.translator || "")}"></label>
+          <label>Editor <input data-book-editor="${escapeHtml(book.slug)}" type="text" value="${escapeHtml(book.sourceMetadata?.editor || "")}"></label>
+          <label>Publication date <input data-book-publication-date="${escapeHtml(book.slug)}" type="text" value="${escapeHtml(book.sourceMetadata?.publicationDate || "")}"></label>
+          <label>License / Rights <input data-book-license="${escapeHtml(book.slug)}" type="text" value="${escapeHtml(book.sourceMetadata?.license || (book.sourceMetadata?.publicDomain ? "Public domain" : ""))}"></label>
+          <label>Source status
+            <select data-book-source-confidence="${escapeHtml(book.slug)}">
+              ${["verified", "source-linked", "local-source", "needs-citation"].map((value) => `<option value="${value}" ${(book.sourceMetadata?.confidence || "needs-citation") === value ? "selected" : ""}>${value}</option>`).join("")}
+            </select>
+          </label>
+          <label>Source notes <textarea data-book-source-notes="${escapeHtml(book.slug)}">${escapeHtml(book.sourceMetadata?.notes || "")}</textarea></label>
+          <button class="gt-btn gt-btn--secondary" data-save-book="${escapeHtml(book.slug)}" type="button">Save Book</button>
+        </article>
+      `).join("");
+    }
+
+    async function refreshAdmin() {
+      await syncAuthFromServer();
+      updateAuthStatus();
+      try {
+        state = await loadAdminBootstrap();
+        renderStats();
+        renderSystemHealth();
+        renderSettings();
+        renderReviewQueue();
+        state.operations = await loadContentOperations();
+        state.qaReport = await loadQaReport();
+        renderContentOperations();
+        renderEditorialIssues();
+        renderQaReport();
+        renderSourceCompletionQueue();
+        renderUsers();
+        renderBooks();
+      } catch (error) {
+        statsGrid.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`;
+        reviewList.innerHTML = "";
+        contentOperations.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`;
+        editorialIssues.innerHTML = "";
+        qaReport.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`;
+        sourceCompletionList.innerHTML = "";
+        userList.innerHTML = "";
+        systemHealth.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p>`;
+        bookList.innerHTML = "";
+      }
+    }
+
+    async function handleRegister() {
+      try {
+        await registerAccount({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value, displayName: document.getElementById("auth-name").value });
+        await refreshAdmin();
+      } catch (error) { showAdminError(error); }
+    }
+
+    async function handleLogin() {
+      try {
+        await loginAccount({ email: document.getElementById("auth-email").value, password: document.getElementById("auth-password").value });
+        await refreshAdmin();
+      } catch (error) { showAdminError(error); }
+    }
+
+    async function handleLogout() {
+      await logoutAccount();
+      state = { books: [], reviewQueue: [], sourceCompletionQueue: [], stats: {}, settings: {}, user: null, users: [], systemHealth: null, fileAssets: [] };
+      setAdminStatus("Signed out.");
+      await refreshAdmin();
+    }
+
+    document.getElementById("register").onclick = handleRegister;
+    document.getElementById("login").onclick = handleLogin;
+    document.getElementById("logout").onclick = handleLogout;
+
+    document.getElementById("save-settings").addEventListener("click", async () => {
+      try {
+        state.settings = await saveAdminSettings({
+          runtime: {
+            dryRun: document.getElementById("setting-dry-run").checked,
+            approvalRequired: document.getElementById("setting-approval-required").checked
+          },
+          members: {
+            allowRegistration: document.getElementById("setting-allow-registration").checked,
+            showBookmarksInSidebarDefault: document.getElementById("setting-default-bookmarks").checked
+          },
+          library: {
+            collectionCardLimit: Number(document.getElementById("setting-collection-limit").value || 12),
+            shuffleCollections: document.getElementById("setting-shuffle-collections").checked,
+            copyAttributionEnabled: document.getElementById("setting-copy-attribution").checked
+          },
+          audio: {
+            enabled: document.getElementById("setting-audio-enabled").checked,
+            exposePlayerUi: document.getElementById("setting-audio-expose-ui").checked,
+            defaultProvider: document.getElementById("setting-audio-provider").value,
+            providers: {
+              openai: {
+                model: document.getElementById("setting-openai-model").value,
+                voice: document.getElementById("setting-openai-voice").value
+              },
+              elevenlabs: {
+                model: document.getElementById("setting-elevenlabs-model").value,
+                voiceId: document.getElementById("setting-elevenlabs-voice-id").value
+              }
+            }
+          },
+          contentAudit: {
+            enabled: document.getElementById("setting-audit-enabled").checked,
+            autoReviewQueue: document.getElementById("setting-audit-review-queue").checked,
+            maxFindingsPerBook: Number(document.getElementById("setting-audit-max-findings").value || 3)
+          },
+          monitoring: {
+            enabled: document.getElementById("setting-monitoring-enabled").checked,
+            alertEmail: document.getElementById("setting-monitoring-email").value,
+            checkIntervalMinutes: Number(document.getElementById("setting-monitoring-interval").value || 15)
+          }
+        });
+        renderSettings();
+      } catch (error) { showAdminError(error); }
+    });
+
+    document.getElementById("refresh-qa-report").addEventListener("click", async () => {
+      try {
+        state.qaReport = await generateQaReport();
+        renderQaReport();
+      } catch (error) { showAdminError(error); }
+    });
+
+    reviewList.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-save-review]");
+      if (!button) return;
+      const id = button.dataset.saveReview;
+      const status = reviewList.querySelector(`[data-review-status="${CSS.escape(id)}"]`)?.value;
+      const assignedTo = reviewList.querySelector(`[data-review-assigned="${CSS.escape(id)}"]`)?.value;
+      const adminNotes = reviewList.querySelector(`[data-review-notes="${CSS.escape(id)}"]`)?.value;
+      try {
+        await updateReviewItem(id, { status, assignedTo, adminNotes });
+        await refreshAdmin();
+      } catch (error) { showAdminError(error); }
+    });
+
+    sourceCompletionList.addEventListener("click", async (event) => {
+      const progress = event.target.closest("[data-mark-source-progress]");
+      if (progress) {
+        const slug = progress.dataset.markSourceProgress;
+        const adminNotes = sourceCompletionList.querySelector(`[data-book-notes="${CSS.escape(slug)}"]`)?.value || "";
+        try {
+          await updateBookAdminState(slug, { visibility: "private", reviewStatus: "in_progress", adminNotes });
+          await refreshAdmin();
+        } catch (error) { showAdminError(error); }
+        return;
+      }
+      const open = event.target.closest("[data-open-source-book]");
+      if (!open) return;
+      filter.value = open.dataset.openSourceBook;
+      renderBooks();
+      document.getElementById("book-list").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    editorialIssues.addEventListener("click", async (event) => {
+      const batch = event.target.closest("[data-batch-bucket][data-batch-action]");
+      if (batch) {
+        const bucket = batch.dataset.batchBucket;
+        const action = batch.dataset.batchAction;
+        if (!confirm(`Apply ${action.replaceAll("_", " ")} to the first 100 items in ${bucket}?`)) return;
+        try {
+          const result = await runContentBatchAction(bucket, action);
+          setAdminStatus(`Batch updated ${result.updated || 0} item(s).`);
+          await refreshAdmin();
+        } catch (error) { showAdminError(error); }
+        return;
+      }
+      const open = event.target.closest("[data-open-source-book]");
+      if (!open) return;
+      filter.value = open.dataset.openSourceBook;
+      renderBooks();
+      document.getElementById("book-list").scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    userList.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-save-user-api]");
+      if (!button) return;
+      const userId = button.dataset.saveUserApi;
+      const apiEnabled = userList.querySelector(`[data-user-api="${CSS.escape(userId)}"]`)?.checked;
+      try {
+        await updateUserApiAccess(userId, { apiEnabled });
+        await refreshAdmin();
+      } catch (error) { showAdminError(error); }
+    });
+
+    bookList.addEventListener("click", async (event) => {
+      const button = event.target.closest("[data-save-book]");
+      if (!button) return;
+      const slug = button.dataset.saveBook;
+      const visibility = bookList.querySelector(`[data-book-visibility="${CSS.escape(slug)}"]`)?.value;
+      const reviewStatus = bookList.querySelector(`[data-book-review="${CSS.escape(slug)}"]`)?.value;
+      const adminNotes = bookList.querySelector(`[data-book-notes="${CSS.escape(slug)}"]`)?.value;
+      const sourceUrl = bookList.querySelector(`[data-book-source-url="${CSS.escape(slug)}"]`)?.value;
+      const archiveUrl = bookList.querySelector(`[data-book-archive-url="${CSS.escape(slug)}"]`)?.value;
+      const translator = bookList.querySelector(`[data-book-translator="${CSS.escape(slug)}"]`)?.value;
+      const editor = bookList.querySelector(`[data-book-editor="${CSS.escape(slug)}"]`)?.value;
+      const publicationDate = bookList.querySelector(`[data-book-publication-date="${CSS.escape(slug)}"]`)?.value;
+      const license = bookList.querySelector(`[data-book-license="${CSS.escape(slug)}"]`)?.value;
+      const confidence = bookList.querySelector(`[data-book-source-confidence="${CSS.escape(slug)}"]`)?.value;
+      const notes = bookList.querySelector(`[data-book-source-notes="${CSS.escape(slug)}"]`)?.value;
+      try {
+        await updateBookAdminState(slug, {
+          visibility,
+          reviewStatus,
+          adminNotes,
+          sourceMetadata: {
+            sourceUrl,
+            archiveUrl,
+            translator,
+            editor,
+            publicationDate,
+            license,
+            confidence,
+            notes,
+            publicDomain: /public domain/i.test(license || "")
+          }
+        });
+        await refreshAdmin();
+      } catch (error) { showAdminError(error); }
+    });
+
+    filter.addEventListener("input", renderBooks);
+
+    await refreshAdmin();
+  </script>
+</body>
+</html>
+
